@@ -14,15 +14,15 @@ The installer and JNI bridge check the fingerprint. Other firmware needs a separ
 
 ## Download and install
 
-[Download v1.4 Combined](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4/Samsung-Native-Live-Blur-v1.4-Combined.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4/SHA256SUMS)
+[Download v1.4](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4/Samsung-Native-Live-Blur-v1.4.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4/SHA256SUMS.txt)
 
 1. Have KernelSU and a working Zygisk implementation enabled. The original setup used Zygisk Next.
 2. Install the ZIP through KernelSU.
 3. Reboot.
 
-The package updates the existing `enable_live_blur` module. During installation it disables the old standalone `native_blur_renderer` module, if present, to prevent duplicate renderer mounts. The combined package contains both components.
+The package updates the existing `enable_live_blur` module. During installation it disables the old standalone `native_blur_renderer` module, if present, to prevent duplicate renderer mounts. The package contains both components.
 
-The two standalone components were confirmed working on the author's phone. The combined v1.4 ZIP passed archive, payload and shell checks; combined installation has not yet been confirmed separately.
+The two standalone components were confirmed working on the author's phone. The v1.4 ZIP passed archive, payload and shell checks; installation as one module has not yet been confirmed separately.
 
 ## How it works
 
@@ -38,7 +38,7 @@ The donor's executable sections remain unchanged. Four unavailable, unrelated BL
 
 The boot check verifies the running renderer hash, watches for repeated crashes, and checks boot completion. A failed trial attempts to restore stock through unmounting and restarting the display service. It sets `renderer-disabled`, leaving the JNI bridge enabled. An unfinished previous trial also skips the renderer on the next boot.
 
-Use the module's **Action** button to restore only the stock renderer. To undo the whole combined module, disable/remove `enable_live_blur` in KernelSU and reboot.
+Use the module's **Action** button to restore only the stock renderer. To undo the whole module, disable/remove `enable_live_blur` in KernelSU and reboot.
 
 Logs:
 
@@ -48,10 +48,10 @@ Logs:
 
 ## Source and packaging
 
-- [module/source](module/source): native source used by the combined module: Zygisk bridge, donor loader, guarded imports, and pinned Zygisk API header.
+- [module/source](module/source): native source used by the module: Zygisk bridge, donor loader, guarded imports, and pinned Zygisk API header.
 - [module](module): complete flashable module payload, including the working native binaries.
 - [tools](tools): native build and ZIP packaging tools.
-- [GitHub Releases](https://github.com/hamzatuss/A57-LiveBlur/releases): combined installable ZIP and checksum.
+- [GitHub Releases](https://github.com/hamzatuss/A57-LiveBlur/releases): installable ZIP and checksum.
 
 To repack the included payload with Node.js 24 or newer:
 
