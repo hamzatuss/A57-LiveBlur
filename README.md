@@ -14,7 +14,7 @@ The installer and JNI bridge check the fingerprint. Other firmware needs a separ
 
 ## Download and install
 
-[Download v1.4 Combined](releases/Samsung-Native-Live-Blur-v1.4-Combined.zip) · [SHA-256](releases/SHA256SUMS)
+[Download v1.4 Combined](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4/Samsung-Native-Live-Blur-v1.4-Combined.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4/SHA256SUMS)
 
 1. Have KernelSU and a working Zygisk implementation enabled. The original setup used Zygisk Next.
 2. Install the ZIP through KernelSU.
@@ -48,10 +48,10 @@ Logs:
 
 ## Source and packaging
 
-- [module/source](module/source): native Zygisk bridge, donor loader, guarded imports, pinned Zygisk API header.
+- [module/source](module/source): native source used by the combined module: Zygisk bridge, donor loader, guarded imports, and pinned Zygisk API header.
 - [module](module): complete flashable module payload, including the working native binaries.
 - [tools](tools): native build and ZIP packaging tools.
-- [releases](releases): original combined v1.4 ZIP.
+- [GitHub Releases](https://github.com/hamzatuss/A57-LiveBlur/releases): combined installable ZIP and checksum.
 
 To repack the included payload with Node.js 24 or newer:
 
@@ -63,7 +63,7 @@ To rebuild the JNI bridge and loader in Termux on the supported phone, install C
 
 `node tools/package.js`
 
-The build uses the included, pinned donor library and the phone's system libraries. It does not rebuild Samsung's proprietary renderer or donor runtime. Output goes to `dist/`. Building and packaging do not install the module.
+The build uses the included, pinned donor library and the phone's system libraries. It does not rebuild Samsung's proprietary renderer or donor runtime. Output goes to `dist/`, and packaging refreshes the payload checksum manifest. Building and packaging do not install the module.
 
 ## Validation and provenance
 

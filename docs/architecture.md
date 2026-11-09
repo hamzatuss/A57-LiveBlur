@@ -34,4 +34,4 @@ Boot scripts perform a guarded bind mount and remount the file read-only, execut
 
 Module ID remains `enable_live_blur`. The installer disables the old standalone `native_blur_renderer` on flash. The combined payload has no root `skip_mount` marker, allowing its floating-feature XML overlays to load. Renderer rollback uses a component marker rather than disabling the combined module.
 
-The prebuilt ZIP is the original 1.4 combined archive. Repacking changes ZIP layout/manifest order; native binaries remain identical unless explicitly rebuilt.
+The GitHub Release ZIP is built from the combined module payload. Standalone module documentation is excluded. Repacking refreshes the checksum manifest; native binaries remain identical unless explicitly rebuilt.
