@@ -8,3 +8,4 @@ node_modules/
 *.log
 trial-pending
 renderer-disabled
+renderer-watch.pid

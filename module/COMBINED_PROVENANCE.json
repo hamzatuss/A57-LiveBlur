@@ -8,6 +8,6 @@
   "target": "samsung/a57xnaeea/a57x:17/CP2A.260605.016/A576BXXS6BZJ2_OXM6BZJ2:user/release-keys",
   "rendererSha256": "103c5493947529c46bd46ad7e164c581ed39095ab24aee973e3d87b8932842dc",
   "zygiskSha256": "13b4b5b0733d56c4c73ab394169f9a30ca1f94fbf036398c4105a619a1524115",
-  "modifications": "Combined package metadata, documentation, migration installer and renderer-only rollback. Native binaries unchanged.",
-  "validation": "User confirmed both standalone components work; combined package not flashed or runtime-tested."
+  "modifications": "v1.4.1: idempotent renderer adoption, boot-ID-aware trial marker, status-only Action, explicit restore script and staged marker reset. Native binaries unchanged.",
+  "validation": "Eight isolated integration checks passed: stock startup, repeated same-boot startup, existing donor adoption, explicit disabled state, previous-boot failure guard, unknown renderer refusal, read-only Action, watchdog rollback with intercepted restart, and staged marker cleanup/migration. Live activation after user installation remains pending."
 }

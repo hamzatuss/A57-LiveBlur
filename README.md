@@ -14,15 +14,15 @@ The installer and JNI bridge check the fingerprint. Other firmware needs a separ
 
 ## Download and install
 
-[Download v1.4](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4/Samsung-Native-Live-Blur-v1.4.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4/SHA256SUMS.txt)
+[Download v1.4.1](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4.1/Samsung-Native-Live-Blur-v1.4.1.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4.1/SHA256SUMS.txt)
 
 1. Have KernelSU and a working Zygisk implementation enabled. The original setup used Zygisk Next.
 2. Install the ZIP through KernelSU.
-3. Reboot.
+3. Perform a full phone reboot. A framework-only restart does not rerun KernelSU boot scripts.
 
 The package updates the existing `enable_live_blur` module. During installation it disables the old standalone `native_blur_renderer` module, if present, to prevent duplicate renderer mounts. The package contains both components.
 
-The two standalone components were confirmed working on the author's phone. The v1.4 ZIP passed archive, payload and shell checks; installation as one module has not yet been confirmed separately.
+The standalone components were confirmed working on the author's phone. Version 1.4 could skip an already-mounted flagship renderer, and its Action button could disable that renderer. Version 1.4.1 fixes both behaviors. Activation after installing this update still needs on-device confirmation.
 
 ## How it works
 
@@ -38,7 +38,9 @@ The donor's executable sections remain unchanged. Four unavailable, unrelated BL
 
 The boot check verifies the running renderer hash, watches for repeated crashes, and checks boot completion. A failed trial attempts to restore stock through unmounting and restarting the display service. It sets `renderer-disabled`, leaving the JNI bridge enabled. An unfinished previous trial also skips the renderer on the next boot.
 
-Use the module's **Action** button to restore only the stock renderer. To undo the whole module, disable/remove `enable_live_blur` in KernelSU and reboot.
+The module's **Action** button displays status without changing the renderer. To explicitly restore stock while keeping the JNI bridge, run `su -c 'sh /data/adb/modules/enable_live_blur/restore-renderer.sh'`. To undo the whole module, disable/remove `enable_live_blur` in KernelSU and reboot.
+
+Installing v1.4.1 clears stale renderer retry/disabled markers in the staged module. Boot trials record the kernel boot ID so repeated setup in the same boot is not mistaken for a failed previous boot.
 
 Logs:
 

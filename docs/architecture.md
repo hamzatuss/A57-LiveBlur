@@ -35,3 +35,11 @@ Boot scripts perform a guarded bind mount and remount the file read-only, execut
 Module ID remains `enable_live_blur`. The installer disables the old standalone `native_blur_renderer` on flash. The combined payload has no root `skip_mount` marker, allowing its floating-feature XML overlays to load. Renderer rollback uses a component marker rather than disabling the combined module.
 
 The GitHub Release ZIP is built from the combined module payload. Standalone module documentation is excluded. Repacking refreshes the checksum manifest; native binaries remain identical unless explicitly rebuilt.
+
+## v1.4.1 startup regression checks
+
+The installed v1.4 instance was running the stock A57 executable, had a renderer-disabled marker, and logged an earlier original-renderer mismatch. Its Action handler created that marker. The startup guard also rejected a verified donor already mounted by the older module.
+
+v1.4.1 accepts that donor without stacking a bind, ties unfinished trials to the kernel boot ID, makes Action read-only, moves manual restore to restore-renderer.sh, and clears stale trial/disabled markers only in the staged installer directory.
+
+Root integration tests in tools/test-renderer-startup.js use a private mount namespace, a temporary target file, and fixture copies of scripts. Service restart requests are intercepted. Tests exercise initial/repeated startup, donor adoption, disabled and failed-boot guards, unknown hash refusal, status-only Action, actual rollback unmount, and staged marker cleanup/migration. The tests do not modify installed modules or the live renderer.

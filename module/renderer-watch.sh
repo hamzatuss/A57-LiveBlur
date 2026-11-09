@@ -2,6 +2,12 @@
 umask 077
 MODDIR=$1
 . "$MODDIR/renderer.conf" || exit 1
+cleanup() {
+    if [ -f "$MODDIR/renderer-watch.pid" ] && [ "$(cat "$MODDIR/renderer-watch.pid")" = "$" ]; then
+        rm -f "$MODDIR/renderer-watch.pid"
+    fi
+}
+trap cleanup EXIT
 rollback() {
     echo "Rollback: $*"
     touch "$MODDIR/renderer-disabled"
@@ -22,6 +28,7 @@ last_pid=; changes=0; stable=0; elapsed=0; started=0; donor_seen=0
 while [ "$elapsed" -lt 180 ]; do
     sleep 2
     elapsed=$((elapsed+2))
+    [ ! -e "$MODDIR/renderer-disabled" ] || { echo 'Watch stopped: renderer explicitly disabled'; exit 0; }
     current_pid=$(pidof surfaceflinger)
     if [ -n "$current_pid" ]; then
         started=1
