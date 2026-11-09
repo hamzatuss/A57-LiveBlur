@@ -1,55 +1,58 @@
 #!/system/bin/sh
 umask 077
 MODDIR=$1
+BB=/data/adb/ksu/bin/busybox
 . "$MODDIR/renderer.conf" || exit 1
+. "$MODDIR/renderer-common.sh" || exit 1
 cleanup() {
-    if [ -f "$MODDIR/renderer-watch.pid" ] && [ "$(cat "$MODDIR/renderer-watch.pid")" = "$" ]; then
-        rm -f "$MODDIR/renderer-watch.pid"
+    if [ -f "$MODDIR/renderer-watch.pid" ]; then
+        IFS= read -r recorded_pid < "$MODDIR/renderer-watch.pid"
+        [ "$recorded_pid" != "$$" ] || rm -f "$MODDIR/renderer-watch.pid"
     fi
 }
 trap cleanup EXIT
+trap 'echo "Watch interrupted; unfinished trial retained for next boot"; exit 0' HUP INT TERM
 rollback() {
     echo "Rollback: $*"
     touch "$MODDIR/renderer-disabled"
-    if umount /system/bin/surfaceflinger; then
-        actual=$(sha256sum /system/bin/surfaceflinger)
-        if [ "${actual%% *}" = "$STOCK_SHA256" ]; then
-            echo 'Original renderer restored; restarting display service'
-            setprop ctl.restart surfaceflinger
-        else
-            echo 'Unexpected original hash; leaving restart to init'
-        fi
+    if restore_stock_renderer; then
+        rm -f "$MODDIR/trial-pending"
+        restart_stock_renderer_if_needed
     else
-        echo 'Unmount failed; renderer trial disabled for next boot'
+        echo 'Stock restore failed; renderer is disabled for next boot'
     fi
     exit 0
 }
-last_pid=; changes=0; stable=0; elapsed=0; started=0; donor_seen=0
-while [ "$elapsed" -lt 180 ]; do
-    sleep 2
-    elapsed=$((elapsed+2))
+last_pid=; last_hash=; donor_pid=; stable_ticks=0; ticks=0
+while [ "$ticks" -lt 720 ]; do
+    sleep 0.25
+    ticks=$((ticks+1))
     [ ! -e "$MODDIR/renderer-disabled" ] || { echo 'Watch stopped: renderer explicitly disabled'; exit 0; }
+    service_state=$(getprop init.svc.surfaceflinger)
+    [ "$service_state" != restarting ] || rollback 'SurfaceFlinger entered restarting state'
     current_pid=$(pidof surfaceflinger)
+    if [ -n "$donor_pid" ] && [ "$current_pid" != "$donor_pid" ]; then
+        rollback 'Flagship renderer process exited or restarted'
+    fi
     if [ -n "$current_pid" ]; then
-        started=1
         if [ "$current_pid" != "$last_pid" ]; then
-            [ -z "$last_pid" ] || changes=$((changes+1))
             last_pid=$current_pid
-            actual=$(sha256sum "/proc/$current_pid/exe" 2>/dev/null)
-            if [ "${actual%% *}" = "$DONOR_SHA256" ]; then donor_seen=1; else donor_seen=0; fi
-            stable=0
+            last_hash=$(renderer_hash "/proc/$current_pid/exe")
+            stable_ticks=0
+        fi
+        if [ "$last_hash" = "$DONOR_SHA256" ]; then
+            donor_pid=$current_pid
+            stable_ticks=$((stable_ticks+1))
         else
-            stable=$((stable+2))
+            stable_ticks=0
         fi
     else
-        stable=0
+        stable_ticks=0
     fi
-    [ "$changes" -lt 3 ] || rollback 'Display service restarted repeatedly'
-    if [ "$elapsed" -ge 40 ] && [ "$started" = 0 ]; then rollback 'Display service did not start'; fi
-    if [ "$elapsed" -ge 40 ] && [ "$donor_seen" = 0 ]; then rollback 'Donor renderer did not activate'; fi
-    if [ "$donor_seen" = 1 ] && [ "$stable" -ge 30 ] && [ "$(getprop sys.boot_completed)" = 1 ]; then
+    [ "$ticks" -lt 120 ] || [ -n "$donor_pid" ] || rollback 'Flagship renderer did not activate within startup grace period'
+    if [ "$stable_ticks" -ge 120 ] && [ "$(getprop sys.boot_completed)" = 1 ]; then
         rm -f "$MODDIR/trial-pending"
-        echo "Boot trial passed: display PID $current_pid stable for $stable seconds"
+        echo "Boot trial passed: flagship PID $current_pid stable; requested backend $(getprop debug.renderengine.backend)"
         exit 0
     fi
 done

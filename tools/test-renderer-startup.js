@@ -1,66 +1,50 @@
-// Root-only integration test. All mounts target a temporary file in a private
-// mount namespace. Namespace entry, process monitoring and service restarts
-// are replaced in fixture copies; installed modules are never modified.
+// Root integration tests: private namespace, temporary targets, mocked Android
+// property writes and service restarts. Installed modules are never modified.
 const fs=require('fs'),path=require('path'),cp=require('child_process'),crypto=require('crypto');
-const root=path.resolve(__dirname,'..'),moduleDir=path.join(root,'module');
-if(process.getuid()!==0)throw Error('Run this test as root on the supported phone');
-if(!process.argv.includes('--private')){
- const r=cp.spawnSync('/system/bin/unshare',['-m',process.execPath,__filename,'--private'],{stdio:'inherit'});process.exit(r.status??1);
-}
+const root=path.resolve(__dirname,'..'),moduleDir=path.join(root,'module'),realBB='/data/adb/ksu/bin/busybox';
+if(process.getuid()!==0)throw Error('Run as root on the supported phone');
+if(!process.argv.includes('--private')){const r=cp.spawnSync('/system/bin/unshare',['-m',process.execPath,__filename,'--private'],{stdio:'inherit'});process.exit(r.status??1)}
 cp.execFileSync('/system/bin/mount',['-o','rprivate','none','/']);
 if(fs.readlinkSync('/proc/self/ns/mnt')===fs.readlinkSync('/proc/1/ns/mnt'))throw Error('Private mount namespace required');
-fs.mkdirSync(path.join(root,'build'),{recursive:true});
-const dir=fs.mkdtempSync(path.join(root,'build/renderer-tests.')),bin=path.join(dir,'bin'),target=path.join(dir,'target'),bb=path.join(bin,'bb');
-fs.mkdirSync(bin);fs.mkdirSync(path.join(dir,'renderer'));
-const hash=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
-const conf=fs.readFileSync(path.join(moduleDir,'renderer.conf'),'utf8'),stock=conf.match(/^STOCK_SHA256=(.*)$/m)[1],donor=conf.match(/^DONOR_SHA256=(.*)$/m)[1];
-const stockFile=path.join(moduleDir,'backup/surfaceflinger.stock');
-fs.copyFileSync(stockFile,target);fs.copyFileSync(path.join(moduleDir,'renderer/surfaceflinger'),path.join(dir,'renderer/surfaceflinger'));fs.writeFileSync(path.join(dir,'renderer.conf'),conf);
-function writeExe(p,s){fs.writeFileSync(p,s,{mode:0o755})}
-writeExe(bb,`#!/system/bin/sh\nif [ "$1" = nsenter ]; then\n shift\n [ "$1" != -t ] || shift 2\n [ "$1" != -m ] || shift\n exec "$@"\nfi\nexec /data/adb/ksu/bin/busybox "$@"\n`);
-for(const name of ['post-fs-data.sh','action.sh','renderer-watch.sh']){let s=fs.readFileSync(path.join(moduleDir,name),'utf8');s=s.replace('BB=/data/adb/ksu/bin/busybox','BB='+bb).replaceAll('/system/bin/surfaceflinger',target);writeExe(path.join(dir,name==='renderer-watch.sh'?'watch-real.sh':name),s)}
-writeExe(path.join(dir,'renderer-watch.sh'),'#!/system/bin/sh\nsleep 0.2\n');
-const flag=n=>path.join(dir,n),remove=n=>fs.rmSync(flag(n),{force:true}),exists=n=>fs.existsSync(flag(n));
-const run=n=>cp.execFileSync('/system/bin/sh',[flag(n)],{encoding:'utf8',env:{...process.env,PATH:'/system/bin'}});
-const assert=(v,msg)=>{if(!v)throw Error(msg)};let mounted=false;
-function clear(){for(const n of ['renderer-disabled','trial-pending','renderer-watch.pid'])remove(n)}
-function unmount(){cp.execFileSync('/system/bin/umount',[target]);mounted=false;assert(hash(target)===stock,'Underlying stock file was not restored')}
+fs.mkdirSync(path.join(root,'build'),{recursive:true});const dir=fs.mkdtempSync(path.join(root,'build/renderer-tests.')),bin=path.join(dir,'bin'),target=path.join(dir,'target'),bb=path.join(bin,'bb');
+fs.mkdirSync(bin);fs.mkdirSync(path.join(dir,'renderer'));fs.mkdirSync(path.join(dir,'backup'));
+const flag=n=>path.join(dir,n),hash=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex'),q=s=>"'"+s.replaceAll("'","'\\''")+"'";
+const conf=fs.readFileSync(path.join(moduleDir,'renderer.conf'),'utf8'),stock=conf.match(/^STOCK_SHA256=(.*)$/m)[1],donor=conf.match(/^DONOR_SHA256=(.*)$/m)[1],stockFile=path.join(moduleDir,'backup/surfaceflinger.stock');
+fs.copyFileSync(stockFile,target);fs.copyFileSync(stockFile,flag('backup/surfaceflinger.stock'));fs.copyFileSync(path.join(moduleDir,'renderer/surfaceflinger'),flag('renderer/surfaceflinger'));fs.writeFileSync(flag('renderer.conf'),conf);
+const writeExe=(p,s)=>fs.writeFileSync(p,s,{mode:0o755});
+writeExe(bb,'#!/system/bin/sh\nif [ "$1" = nsenter ]; then\n shift\n [ "$1" != -F ] || shift\n [ "$1" != -t ] || shift 2\n [ "$1" != -m ] || shift\n exec "$@"\nfi\nexec '+realBB+' "$@"\n');
+writeExe(path.join(bin,'getprop'),'#!/system/bin/sh\ncase "$1" in\n debug.renderengine.backend) if [ -f '+q(flag('backend'))+' ]; then cat '+q(flag('backend'))+'; fi;;\n init.svc.surfaceflinger) if [ -f '+q(flag('service-state'))+' ]; then cat '+q(flag('service-state'))+'; else echo running; fi;;\n *) exec /system/bin/getprop "$@";;\nesac\n');
+writeExe(path.join(bin,'setprop'),'#!/system/bin/sh\ncase "$1" in\n debug.renderengine.backend) [ ! -e '+q(flag('block-backend'))+' ] || exit 1; printf "%s\\n" "$2" > '+q(flag('backend'))+';;\n ctl.restart) printf "%s\\n" "$*" >> '+q(flag('restart-request'))+';;\n *) echo "Unexpected property write" >&2; exit 9;;\nesac\n');
+const mountGuard=path.join(bin,'mount-guard');writeExe(mountGuard,'#!/system/bin/sh\n[ "$(cat '+q(flag('backend'))+')" = skiaglthreaded ] || { echo "Backend was not pinned before mount" >&2; exit 7; }\nexec /system/bin/mount "$@"\n');
+for(const name of ['post-fs-data.sh','action.sh','renderer-watch.sh','renderer-common.sh']){let s=fs.readFileSync(path.join(moduleDir,name),'utf8').replace('BB='+realBB,'BB='+bb).replaceAll('/system/bin/surfaceflinger',target).replaceAll('/system/bin/mount',mountGuard);writeExe(flag(name==='renderer-watch.sh'?'watch-real.sh':name),s)}
+writeExe(flag('renderer-watch.sh'),'#!/system/bin/sh\nsleep 0.2\n');
+const env={...process.env,PATH:bin+':/system/bin'},run=n=>cp.execFileSync('/system/bin/sh',[flag(n)],{encoding:'utf8',env}),exists=n=>fs.existsSync(flag(n)),remove=n=>fs.rmSync(flag(n),{force:true}),assert=(v,msg)=>{if(!v)throw Error(msg)};
+function clear(){for(const n of ['renderer-disabled','trial-pending','renderer-watch.pid','service-state','block-backend','restart-request','poll-count','pid-count'])remove(n)}
+function mountDonor(){cp.execFileSync('/system/bin/mount',['-o','bind',flag('renderer/surfaceflinger'),target])}
+function unmount(){cp.execFileSync('/system/bin/umount',[target]);assert(hash(target)===stock,'Underlying stock file not restored')}
+function runWatch(){writeExe(flag('watch-launch.sh'),'#!/system/bin/sh\nprintf "%s\\n" "$$" > '+q(flag('renderer-watch.pid'))+'\nexec /system/bin/sh '+q(flag('watch-real.sh'))+' '+q(dir)+'\n');return run('watch-launch.sh')}
 try{
- run('post-fs-data.sh');mounted=true;
- assert(hash(target)===donor,'Stock-to-donor startup failed');assert(!exists('renderer-disabled'),'Startup disabled renderer');
- assert(fs.readFileSync(flag('trial-pending'),'utf8').trim()===fs.readFileSync('/proc/sys/kernel/random/boot_id','utf8').trim(),'Trial boot ID missing');
- run('post-fs-data.sh');assert(hash(target)===donor,'Repeated startup lost donor');unmount();
- console.log('PASS: stock startup and same-boot repeat create only one bind');clear();
- cp.execFileSync('/system/bin/mount',['-o','bind',flag('renderer/surfaceflinger'),target]);mounted=true;
- run('post-fs-data.sh');assert(hash(target)===donor,'Existing donor rejected');unmount();
- console.log('PASS: existing flagship renderer adopted without stacking a bind');clear();
- fs.writeFileSync(flag('renderer-disabled'),'');run('post-fs-data.sh');assert(hash(target)===stock,'Disabled renderer was mounted');
- console.log('PASS: explicit disabled marker respected');clear();
- fs.writeFileSync(flag('trial-pending'),'different-boot\n');run('post-fs-data.sh');assert(exists('renderer-disabled')&&hash(target)===stock,'Failed prior boot not guarded');
- console.log('PASS: unfinished previous-boot trial retains stock');clear();
- fs.writeFileSync(target,'unknown renderer');const unknown=hash(target);run('post-fs-data.sh');assert(hash(target)===unknown&&!exists('trial-pending'),'Unknown renderer was replaced');fs.copyFileSync(stockFile,target);
- console.log('PASS: unknown renderer refused');clear();
- run('action.sh');assert(!exists('renderer-disabled')&&!exists('trial-pending')&&hash(target)===stock,'Status Action changed renderer state');
- console.log('PASS: Action is read-only');
- // Exercise the real watchdog, but intercept sleep, PID discovery and the
- // property-service command. Its unmount still uses the real kernel.
- writeExe(path.join(bin,'sleep'),'#!/system/bin/sh\nexit 0\n');writeExe(path.join(bin,'pidof'),'#!/system/bin/sh\nexit 1\n');
- writeExe(path.join(bin,'setprop'),'#!/system/bin/sh\nprintf "%s\\n" "$*" >> "'+flag('restart-request')+'"\n');
- cp.execFileSync('/system/bin/mount',['-o','bind',flag('renderer/surfaceflinger'),target]);mounted=true;
- cp.execFileSync('/system/bin/sh',[flag('watch-real.sh'),dir],{encoding:'utf8',env:{...process.env,PATH:bin+':/system/bin'}});mounted=false;
- assert(exists('renderer-disabled')&&hash(target)===stock,'Watchdog failed to restore stock');assert(fs.readFileSync(flag('restart-request'),'utf8').trim()==='ctl.restart surfaceflinger','Restart request not captured');
- console.log('PASS: watchdog restores stock; live restart command intercepted');clear();
- // Only marker-reset/migration behavior is under test here: package integrity
- // and permissions are validated separately, so these installer helpers are
- // stubbed. Every old-module path points into this fixture directory.
- const stage=flag('stage'),old=flag('old-renderer'),oldUpdate=flag('old-update');fs.mkdirSync(stage);fs.mkdirSync(old);fs.mkdirSync(oldUpdate);
- for(const name of ['renderer-disabled','trial-pending','renderer-watch.pid'])fs.writeFileSync(path.join(stage,name),'stale');
- let installer=fs.readFileSync(path.join(moduleDir,'customize.sh'),'utf8').replaceAll('/system/bin/surfaceflinger',target).replaceAll('/data/adb/modules/native_blur_renderer',old).replaceAll('/data/adb/modules_update/native_blur_renderer',oldUpdate);
- writeExe(flag('installer.sh'),installer);
- const harness='MODPATH='+stage+'\nabort(){ echo "$*" >&2; exit 1; }\nset_perm_recursive(){ :; }\nset_perm(){ :; }\nui_print(){ :; }\nsha256sum(){ if [ "$1" = -c ]; then return 0; fi; /system/bin/sha256sum "$@"; }\n. '+flag('installer.sh')+'\n';
- writeExe(flag('installer-test.sh'),harness);run('installer-test.sh');
- for(const name of ['renderer-disabled','trial-pending','renderer-watch.pid'])assert(!fs.existsSync(path.join(stage,name)),'Installer retained '+name);
- assert(fs.existsSync(path.join(old,'disable'))&&fs.existsSync(path.join(oldUpdate,'disable')),'Old renderer migration markers missing');
- console.log('PASS: staged installer clears old markers and retires standalone renderer');
- console.log('All isolated integration checks passed. Installed modules and live display were not changed.');
-}finally{if(mounted)cp.spawnSync('/system/bin/umount',[target]);}
+ writeExe(flag('pid-proof.sh'),'#!/system/bin/sh\nprintf "%s\\n" "$$"\n');
+ const proof=cp.spawnSync(realBB,['nsenter','-F','-t',String(process.pid),'-m','/system/bin/sh',flag('pid-proof.sh')],{encoding:'utf8'});assert(proof.status===0&&proof.stdout.trim()===String(proof.pid),'nsenter -F did not preserve PID');console.log('PASS: real nsenter -F preserves watchdog PID');
+ run('post-fs-data.sh');assert(hash(target)===donor&&!exists('renderer-disabled'),'Stock startup failed');assert(fs.readFileSync(flag('backend'),'utf8').trim()==='skiaglthreaded','GLES backend not pinned');
+ assert(fs.readFileSync(flag('trial-pending'),'utf8').trim()===fs.readFileSync('/proc/sys/kernel/random/boot_id','utf8').trim(),'Trial boot ID missing');run('post-fs-data.sh');unmount();console.log('PASS: GLES pin precedes stock startup; repeated setup creates one bind');clear();
+ mountDonor();fs.writeFileSync(flag('backend'),'skiavkthreaded\n');run('post-fs-data.sh');assert(hash(target)===donor&&fs.readFileSync(flag('backend'),'utf8').trim()==='skiaglthreaded','Existing donor adoption/pin failed');unmount();console.log('PASS: existing donor is reused and backend corrected');clear();
+ fs.writeFileSync(flag('renderer-disabled'),'');run('post-fs-data.sh');assert(hash(target)===stock,'Disabled renderer mounted');console.log('PASS: explicit disabled marker respected');clear();
+ fs.writeFileSync(flag('trial-pending'),'different-boot\n');run('post-fs-data.sh');assert(exists('renderer-disabled')&&hash(target)===stock,'Prior boot not guarded');console.log('PASS: failed previous boot keeps stock');clear();
+ fs.writeFileSync(target,'unknown renderer');const unknown=hash(target);run('post-fs-data.sh');assert(hash(target)===unknown&&!exists('trial-pending'),'Unknown renderer replaced');fs.copyFileSync(stockFile,target);console.log('PASS: unknown renderer refused');clear();
+ remove('backend');fs.writeFileSync(flag('block-backend'),'');run('post-fs-data.sh');assert(hash(target)===stock&&!exists('trial-pending'),'Mounted despite failed backend pin');console.log('PASS: backend-pin failure prevents donor mount');clear();fs.writeFileSync(flag('backend'),'skiaglthreaded\n');
+ run('action.sh');assert(!exists('renderer-disabled')&&!exists('trial-pending')&&hash(target)===stock,'Action changed state');console.log('PASS: Action stays read-only');
+ writeExe(path.join(bin,'sleep'),'#!/system/bin/sh\necho poll >> '+q(flag('poll-count'))+'\n');writeExe(path.join(bin,'pidof'),'#!/system/bin/sh\nexit 1\n');
+ mountDonor();fs.writeFileSync(flag('service-state'),'restarting\n');runWatch();assert(hash(target)===stock&&exists('renderer-disabled'),'Fast crash rollback failed');assert(fs.readFileSync(flag('poll-count'),'utf8').trim().split('\n').length===1,'Rollback did not happen on first poll');assert(!exists('renderer-watch.pid'),'Watchdog PID file was not cleaned');assert(fs.readFileSync(flag('restart-request'),'utf8').trim()==='ctl.restart surfaceflinger','Restart not intercepted');console.log('PASS: first service restart rolls back immediately and cleans PID');clear();
+ // A normal unmount can fail under a mount manager. Force that case and
+ // verify that the independent backup bind exposes the exact stock bytes.
+ mountDonor();writeExe(path.join(bin,'umount'),'#!/system/bin/sh\nexit 1\n');fs.writeFileSync(flag('service-state'),'restarting\n');runWatch();assert(hash(target)===stock&&exists('renderer-disabled'),'Verified backup-bind recovery failed');assert(!exists('renderer-watch.pid'),'Fallback left stale PID');cp.execFileSync('/system/bin/umount',[target]);cp.execFileSync('/system/bin/umount',[target]);assert(hash(target)===stock,'Backup-bind mount stack not recoverable');remove('bin/umount');console.log('PASS: failed unmount recovers through verified stock backup');clear();
+ // Simulate a donor that was seen once and then vanished between polls.
+ writeExe(path.join(bin,'pidof'),'#!/system/bin/sh\nif [ ! -e '+q(flag('pid-count'))+' ]; then touch '+q(flag('pid-count'))+'; echo 42424; fi\n');
+ writeExe(path.join(bin,'sha256sum'),'#!/system/bin/sh\nif [ "$1" = /proc/42424/exe ]; then echo "'+donor+'  $1"; else exec /system/bin/sha256sum "$@"; fi\n');
+ mountDonor();fs.writeFileSync(flag('service-state'),'running\n');runWatch();assert(hash(target)===stock&&exists('renderer-disabled'),'Lost donor PID did not trigger recovery');assert(fs.readFileSync(flag('poll-count'),'utf8').trim().split('\n').length===2,'Lost PID recovery was delayed');assert(!exists('renderer-watch.pid'),'Lost PID left stale watcher');console.log('PASS: donor exit rolls back on next poll');clear();remove('bin/sha256sum');writeExe(path.join(bin,'pidof'),'#!/system/bin/sh\nexit 1\n');
+ const stage=flag('stage'),old=flag('old-renderer'),oldUpdate=flag('old-update');fs.mkdirSync(stage);fs.mkdirSync(old);fs.mkdirSync(oldUpdate);for(const n of ['renderer-disabled','trial-pending','renderer-watch.pid'])fs.writeFileSync(path.join(stage,n),'stale');
+ const installer=fs.readFileSync(path.join(moduleDir,'customize.sh'),'utf8').replaceAll('/system/bin/surfaceflinger',target).replaceAll('/data/adb/modules/native_blur_renderer',old).replaceAll('/data/adb/modules_update/native_blur_renderer',oldUpdate);writeExe(flag('installer.sh'),installer);
+ writeExe(flag('installer-test.sh'),'MODPATH='+q(stage)+'\nabort(){ echo "$*" >&2; exit 1; }\nset_perm_recursive(){ :; }\nset_perm(){ :; }\nui_print(){ :; }\nsha256sum(){ if [ "$1" = -c ]; then return 0; fi; /system/bin/sha256sum "$@"; }\n. '+q(flag('installer.sh'))+'\n');run('installer-test.sh');for(const n of ['renderer-disabled','trial-pending','renderer-watch.pid'])assert(!fs.existsSync(path.join(stage,n)),'Installer retained '+n);assert(fs.existsSync(path.join(old,'disable'))&&fs.existsSync(path.join(oldUpdate,'disable')),'Migration markers missing');console.log('PASS: staged update clears old markers and retires standalone renderer');
+ console.log('All isolated checks passed; live properties, display and installed modules were unchanged.');
+}finally{for(let i=0;i<4;i++){const r=cp.spawnSync('/system/bin/umount',[target]);if(r.status!==0)break}}

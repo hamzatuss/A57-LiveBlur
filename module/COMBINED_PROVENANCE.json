@@ -8,6 +8,6 @@
   "target": "samsung/a57xnaeea/a57x:17/CP2A.260605.016/A576BXXS6BZJ2_OXM6BZJ2:user/release-keys",
   "rendererSha256": "103c5493947529c46bd46ad7e164c581ed39095ab24aee973e3d87b8932842dc",
   "zygiskSha256": "225a1f38604297af37dde13d5b9e346f4e7340423e0d444a793cf85603e35e40",
-  "modifications": "v1.4.2: extend the JNI process allowlist to exact system:ui and Android IntentResolver; retain v1.4.1 startup/rollback behavior. Samsung donor libraries and renderer unchanged.",
-  "validation": "Production Zygisk entry/JNI hook and offscreen blur/curve tests passed for system:ui, com.android.intentresolver and SystemUI. System_server, system and unrelated processes were excluded. Live chooser confirmation after installation is pending."
+  "modifications": "v1.4.3: pin Skia GLES before donor startup; first-failure recovery, correct watcher PID lifecycle and verified stock-backup recovery. Native JNI code, donor libraries and renderer unchanged from v1.4.2.",
+  "validation": "Isolated backend-ordering, first-restart/PID-loss recovery, cleanup and backup-bind checks passed, together with existing boot/migration guards. Real cold-boot confirmation pending."
 }

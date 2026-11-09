@@ -3,7 +3,7 @@ const root=path.resolve(__dirname,'..'),source=path.join(root,'module'),files={}
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 function walk(dir,prefix=''){for(const entry of fs.readdirSync(dir,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name))){const name=prefix+entry.name,p=path.join(dir,entry.name);if(entry.isSymbolicLink())throw Error('Symlinks are not supported: '+name);if(entry.isDirectory())walk(p,name+'/');else if(entry.isFile()){if(name==='SHA256SUMS')continue;if(/(^|\/)(trial-pending|renderer-disabled|disable|remove|skip_mount|renderer-watch\.pid)$/.test(name)||name.endsWith('.log'))throw Error('Runtime marker/log in payload: '+name);files[name]=fs.readFileSync(p)}}}
 walk(source);
-for(const name of ['customize.sh','post-fs-data.sh','renderer-watch.sh','action.sh','restore-renderer.sh','renderer/surfaceflinger','zygisk/arm64-v8a.so','donor/libblur_donor.so','donor/libblur_loader.so'])if(!files[name])throw Error('Required payload missing: '+name);
+for(const name of ['customize.sh','post-fs-data.sh','renderer-watch.sh','action.sh','restore-renderer.sh','renderer-common.sh','renderer/surfaceflinger','zygisk/arm64-v8a.so','donor/libblur_donor.so','donor/libblur_loader.so'])if(!files[name])throw Error('Required payload missing: '+name);
 const conf=files['renderer.conf'].toString(),donor=sha(files['renderer/surfaceflinger']),stock=sha(files['backup/surfaceflinger.stock']);if(!conf.includes(donor)||!conf.includes(stock))throw Error('Renderer hashes do not match configuration');
 files.SHA256SUMS=Buffer.from(Object.keys(files).map(n=>sha(files[n])+'  '+n).join('\n')+'\n');
 fs.writeFileSync(path.join(source,'SHA256SUMS'),files.SHA256SUMS);

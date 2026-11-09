@@ -14,7 +14,7 @@ The installer and JNI bridge check the fingerprint. Other firmware needs a separ
 
 ## Download and install
 
-[Download v1.4.2](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4.2/Samsung-Native-Live-Blur-v1.4.2.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4.2/SHA256SUMS.txt)
+[Download v1.4.3](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4.3/Samsung-Native-Live-Blur-v1.4.3.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.4.3/SHA256SUMS.txt)
 
 1. Have KernelSU and a working Zygisk implementation enabled. The original setup used Zygisk Next.
 2. Install the ZIP through KernelSU.
@@ -22,7 +22,7 @@ The installer and JNI bridge check the fingerprint. Other firmware needs a separ
 
 The package updates the existing `enable_live_blur` module. During installation it disables the old standalone `native_blur_renderer` module, if present, to prevent duplicate renderer mounts. The package contains both components.
 
-The standalone components were confirmed working on the author's phone. Version 1.4 could skip an already-mounted flagship renderer, and its Action button could disable that renderer. Version 1.4.1 fixes both behaviors. Version 1.4.2 adds the framework app chooser and Android IntentResolver processes. Notification blur and color curves are confirmed working; live chooser behavior after installing this update still needs confirmation.
+The standalone components were confirmed working on the author's phone. Version 1.4 could skip an already-mounted flagship renderer, and its Action button could disable that renderer. Version 1.4.1 fixes both behaviors. Version 1.4.2 adds the framework app chooser and Android IntentResolver processes. Notification blur and color curves previously worked, but a v1.4.2 boot failed while initializing direct Skia Vulkan and Android rescue-rebooted. Version 1.4.3 pins the working GLES backend and improves first-failure recovery. Cold-boot activation and live chooser behavior after this update still need confirmation.
 
 ## How it works
 
@@ -30,13 +30,14 @@ The standalone components were confirmed working on the author's phone. Version 
 - Selectively hooks `SurfaceControl.nativeSetBlurRegionsEx` in SystemUI, Samsung launcher, AOD, Dressroom, framework UI (`system:ui`) and Android IntentResolver. The hook forwards the original arguments to unchanged Samsung donor machine code.
 - Retains the stock installed `libandroid_runtime.so`. The donor is loaded separately, with unrelated JNI registrations suppressed.
 - Uses the original SurfaceFlinger from **SM-S942B S942BXXU5BZJA**. It contains Samsung's `ColorCurveEffect` shader, which is absent from the target A57 renderer.
+- Selects `skiaglthreaded` before starting the renderer, matching the working Skia GLES/ANGLE path on this phone.
 - Binds that renderer into init's mount namespace at boot. No system partition is flashed.
 
 The donor's executable sections remain unchanged. Four unavailable, unrelated BLAST imports in the JNI donor have aborting guards; the tested blur calls did not use them. Native implementation provenance is recorded in [module/donor/PROVENANCE.json](module/donor/PROVENANCE.json) and [module/PROVENANCE.json](module/PROVENANCE.json).
 
 ## Rollback
 
-The boot check verifies the running renderer hash, watches for repeated crashes, and checks boot completion. A failed trial attempts to restore stock through unmounting and restarting the display service. It sets `renderer-disabled`, leaving the JNI bridge enabled. An unfinished previous trial also skips the renderer on the next boot.
+The boot check verifies the running renderer hash and boot completion. It polls every 0.25 seconds and restores stock on the first service restarting state or loss of a confirmed donor process. Recovery first unmounts the donor; if that fails, it can bind the verified stock backup. It restarts the service only when stock is not already running. It sets `renderer-disabled`, leaving the JNI bridge enabled. An unfinished previous trial also skips the renderer on the next boot.
 
 The module's **Action** button displays status without changing the renderer. To explicitly restore stock while keeping the JNI bridge, run `su -c 'sh /data/adb/modules/enable_live_blur/restore-renderer.sh'`. To undo the whole module, disable/remove `enable_live_blur` in KernelSU and reboot.
 
@@ -66,6 +67,12 @@ To rebuild the JNI bridge and loader in Termux on the supported phone, install C
 `node tools/package.js`
 
 The build uses the included, pinned donor library and the phone's system libraries. It does not rebuild Samsung's proprietary renderer or donor runtime. Output goes to `dist/`, and packaging refreshes the payload checksum manifest. Building and packaging do not install the module.
+
+## Startup regression checks
+
+`su -c '/data/data/com.termux/files/usr/bin/node tools/test-renderer-startup.js'`
+
+Run from the repository directory on the supported phone. Tests use a private namespace and temporary files. Android property writes and display-service restart requests are mocked; installed modules and live properties remain unchanged. They cover backend selection before mount, failed-pin refusal, adoption, boot guards, immediate recovery, PID cleanup and backup-bind recovery.
 
 ## Chooser coverage
 

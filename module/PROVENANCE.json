@@ -15,5 +15,5 @@
     "Dependency and symbol checks",
     "Isolated mount rollback test"
   ],
-  "visualValidation": "Flagship renderer verified active on the supported phone; user reports notification blur and color curves working. v1.4.2 live chooser validation pending installation."
+  "visualValidation": "Previously working notification blur/color curve on the target. v1.4.2 direct Vulkan startup failed; v1.4.3 GLES startup and recovery changes await real reboot confirmation."
 }

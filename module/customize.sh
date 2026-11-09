@@ -7,6 +7,7 @@ case "${actual%% *}" in 5bee19df69e0f2b9cb32dce7fd02c37857c01cd7c328e2f5a9daab04
 set_perm_recursive "$MODPATH" 0 0 0755 0644
 for script in post-fs-data.sh renderer-watch.sh action.sh restore-renderer.sh; do set_perm "$MODPATH/$script" 0 0 0755; done
 set_perm "$MODPATH/renderer/surfaceflinger" 0 0 0755 u:object_r:surfaceflinger_exec:s0
+set_perm "$MODPATH/backup/surfaceflinger.stock" 0 0 0755 u:object_r:surfaceflinger_exec:s0
 for old in /data/adb/modules/native_blur_renderer /data/adb/modules_update/native_blur_renderer; do
     if [ -d "$old" ]; then touch "$old/disable" || abort 'Cannot disable old standalone renderer'; fi
 done

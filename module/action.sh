@@ -3,6 +3,7 @@ MODDIR=${0%/*}
 BB=/data/adb/ksu/bin/busybox
 . "$MODDIR/renderer.conf" || exit 1
 echo 'Samsung Native Live Blur — status'
+echo "Requested backend: $(getprop debug.renderengine.backend)"
 if [ -e "$MODDIR/renderer-disabled" ]; then echo 'Renderer disabled marker: present'; else echo 'Renderer disabled marker: absent'; fi
 actual=$("$BB" nsenter -t 1 -m /system/bin/sha256sum /system/bin/surfaceflinger)
 case "${actual%% *}" in
