@@ -15,5 +15,5 @@
     "Dependency and symbol checks",
     "Isolated mount rollback test"
   ],
-  "visualValidation": "Pending reboot"
+  "visualValidation": "Flagship renderer verified active on the supported phone; user reports notification blur and color curves working. v1.4.2 live chooser validation pending installation."
 }

@@ -16,7 +16,7 @@ void forward(JNIEnv *e,jclass c,jlong t,jlong s,jobjectArray regions){
  if(exact)exact(e,c,t,s,regions);
 }
 bool matches(const char *s,const char *p){size_t n=strlen(p);return !strncmp(s,p,n)&&(s[n]==0||s[n]==':');}
-bool target(const char *s){return matches(s,"com.android.systemui")||matches(s,"com.samsung.android.app.aodservice")||matches(s,"com.samsung.android.app.dressroom")||matches(s,"com.sec.android.app.launcher")||matches(s,"com.samsung.android.app.launcher");}
+bool target(const char *s){return !strcmp(s,"system:ui")||matches(s,"com.android.intentresolver")||matches(s,"com.android.systemui")||matches(s,"com.samsung.android.app.aodservice")||matches(s,"com.samsung.android.app.dressroom")||matches(s,"com.sec.android.app.launcher")||matches(s,"com.samsung.android.app.launcher");}
 class NativeBlurModule:public zygisk::ModuleBase {
  zygisk::Api *api=nullptr;JNIEnv *env=nullptr;
  public:

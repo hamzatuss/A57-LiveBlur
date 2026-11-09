@@ -7,7 +7,7 @@
   },
   "target": "samsung/a57xnaeea/a57x:17/CP2A.260605.016/A576BXXS6BZJ2_OXM6BZJ2:user/release-keys",
   "rendererSha256": "103c5493947529c46bd46ad7e164c581ed39095ab24aee973e3d87b8932842dc",
-  "zygiskSha256": "13b4b5b0733d56c4c73ab394169f9a30ca1f94fbf036398c4105a619a1524115",
-  "modifications": "v1.4.1: idempotent renderer adoption, boot-ID-aware trial marker, status-only Action, explicit restore script and staged marker reset. Native binaries unchanged.",
-  "validation": "Eight isolated integration checks passed: stock startup, repeated same-boot startup, existing donor adoption, explicit disabled state, previous-boot failure guard, unknown renderer refusal, read-only Action, watchdog rollback with intercepted restart, and staged marker cleanup/migration. Live activation after user installation remains pending."
+  "zygiskSha256": "225a1f38604297af37dde13d5b9e346f4e7340423e0d444a793cf85603e35e40",
+  "modifications": "v1.4.2: extend the JNI process allowlist to exact system:ui and Android IntentResolver; retain v1.4.1 startup/rollback behavior. Samsung donor libraries and renderer unchanged.",
+  "validation": "Production Zygisk entry/JNI hook and offscreen blur/curve tests passed for system:ui, com.android.intentresolver and SystemUI. System_server, system and unrelated processes were excluded. Live chooser confirmation after installation is pending."
 }

@@ -43,3 +43,11 @@ The installed v1.4 instance was running the stock A57 executable, had a renderer
 v1.4.1 accepts that donor without stacking a bind, ties unfinished trials to the kernel boot ID, makes Action read-only, moves manual restore to restore-renderer.sh, and clears stale trial/disabled markers only in the staged installer directory.
 
 Root integration tests in tools/test-renderer-startup.js use a private mount namespace, a temporary target file, and fixture copies of scripts. Service restart requests are intercepted. Tests exercise initial/repeated startup, donor adoption, disabled and failed-boot guards, unknown hash refusal, status-only Action, actual rollback unmount, and staged marker cleanup/migration. The tests do not modify installed modules or the live renderer.
+
+## v1.4.2 chooser coverage
+
+Package-manager resolution of a text-file VIEW intent identifies android/com.android.internal.app.ResolverActivity running as system:ui. Framework DEX inspection shows SemBlurHelper checking FW_WINDOW_BLUR_SUPPORTED and applying SemBlurInfo. That feature flag comes from the already-enabled 3D surface transition floating feature. The previous process allowlist omitted system:ui.
+
+The update adds an exact system:ui process match and com.android.intentresolver package matching. The real rebuilt module was loaded through its Zygisk entry point in isolated Android runtimes. Offscreen checkerboard pixels were baseline 0xff000000, ordinary blur 0xff757575, and Samsung curve 0xffcdcdcd for system:ui, com.android.intentresolver and com.android.systemui. System_server (server callback), system, system:ui:unrelated and an unrelated app received no hook. Tests are reproducible with tools/test-native-blur.js.
+
+The Samsung donor libraries and renderer are unchanged. Actual chooser UI behavior remains pending user installation and a full reboot.
