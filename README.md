@@ -1,5 +1,7 @@
 # A57 LiveBlur
 
+> **AI disclosure:** This project was made with AI assistance (OpenAI Codex).
+
 Samsung flagship live blur and color curves for the Galaxy A57 5G, packaged as a KernelSU + Zygisk module.
 
 ## Supported build
@@ -43,12 +45,6 @@ Logs:
 `su -c 'cat /data/adb/modules/enable_live_blur/renderer-status.log'`
 
 `su -c 'logcat -d -s NativeBlurDonor'`
-
-## Fluid Motion
-
-Fluid Motion's notification/Quick Settings code was inspected while the module was disabled. Its blur-binder hook captures the window root; it does not replace the native blur function or color curve. Notification rows use animation matrices. Quick Settings replaces normal Compose drawing during its animation with clipped, separately transformed RenderNode pieces.
-
-That Quick Settings drawing path could desynchronize visible content and Samsung blur regions. This is a code-based compatibility concern, not a confirmed runtime conflict. See [the analysis](docs/fluid-motion.md).
 
 ## Source and packaging
 
