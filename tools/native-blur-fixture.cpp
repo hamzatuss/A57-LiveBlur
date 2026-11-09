@@ -3,6 +3,7 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,9 +11,12 @@
 struct { jclass rectClass; } schema;
 static zygisk::internal::module_abi *moduleAbi=nullptr;
 static unsigned hooked=0;
+using BlurFn=void(*)(JNIEnv*,jclass,jlong,jlong,jobjectArray);
+static BlurFn hookFunction=nullptr;
 static bool fakeRegister(zygisk::internal::api_table*,zygisk::internal::module_abi *m){moduleAbi=m;return true;}
 static void fakeHook(JNIEnv *e,const char *name,JNINativeMethod *methods,int n){
  assert(n==1&&!strcmp(name,"android/view/SurfaceControl")&&!strcmp(methods[0].name,"nativeSetBlurRegionsEx"));
+ hookFunction=(BlurFn)methods[0].fnPtr;
  auto cls=e->FindClass(name);JNINativeMethod patch=methods[0];assert(e->RegisterNatives(cls,&patch,1)==JNI_OK);
  Dl_info info{};assert(dladdr(dlsym(RTLD_DEFAULT,"_ZN7android36register_android_view_SurfaceControlEP7_JNIEnv"),&info));
  methods[0].fnPtr=(char*)info.dli_fbase+0x2167e8;++hooked;
@@ -27,9 +31,10 @@ static void installModuleFixture(JNIEnv *e){
  using Entry=void(*)(zygisk::internal::api_table*,JNIEnv*);auto entry=(Entry)dlsym(h,"zygisk_module_entry");assert(entry);
  static zygisk::internal::api_table table{};table.registerModule=fakeRegister;table.hookJniNativeMethods=fakeHook;table.getModuleDir=fakeDir;table.setOption=fakeOption;
  entry(&table,e);assert(moduleAbi&&moduleAbi->api_version==4);
- jint uid=1000,gid=1000,flags=0,mount=0;jintArray gids=nullptr;jobjectArray limits=nullptr;
+ jint uid=getenv("NATIVEBLUR_TEST_UID")?atoi(getenv("NATIVEBLUR_TEST_UID")):10000,gid=uid,flags=0,mount=0;jintArray gids=nullptr;jobjectArray limits=nullptr;
  jstring se=nullptr,name=e->NewStringUTF(getenv("NATIVEBLUR_TEST_TARGET")?getenv("NATIVEBLUR_TEST_TARGET"):"system:ui"),isa=e->NewStringUTF("arm64"),dir=nullptr;
- zygisk::AppSpecializeArgs args{uid,gid,gids,flags,limits,mount,se,name,isa,dir,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+ jboolean child=getenv("NATIVEBLUR_TEST_CHILD_ZYGOTE")&&!strcmp(getenv("NATIVEBLUR_TEST_CHILD_ZYGOTE"),"1");
+ zygisk::AppSpecializeArgs args{uid,gid,gids,flags,limits,mount,se,name,isa,dir,nullptr,&child,nullptr,nullptr,nullptr,nullptr,nullptr};
  if(getenv("NATIVEBLUR_TEST_SERVER")&&!strcmp(getenv("NATIVEBLUR_TEST_SERVER"),"1"))moduleAbi->preServerSpecialize(moduleAbi->impl,nullptr);else moduleAbi->preAppSpecialize(moduleAbi->impl,&args);
  bool expect=!(getenv("NATIVEBLUR_EXPECT_NO_HOOK")&&!strcmp(getenv("NATIVEBLUR_EXPECT_NO_HOOK"),"1"));assert(hooked==(expect?1u:0u)&&unloaded!=expect&&!e->ExceptionCheck());
  puts("Production Zygisk module registered only the extended-blur method in the isolated runtime.");
@@ -39,6 +44,34 @@ static void installModuleFixture(JNIEnv *e){
 static jmethodID method(JNIEnv *e,jclass c,const char *name,const char *sig){
  auto m=e->GetMethodID(c,name,sig);if(!m){e->ExceptionDescribe();fprintf(stderr,"Missing %s %s\n",name,sig);abort();}return m;
 }
+
+struct RaceCall { JavaVM *vm; jclass control; jobjectArray regions; jlong transaction,surface; pthread_barrier_t *barrier; };
+static void *firstUseWorker(void *p){
+ auto *call=(RaceCall*)p;JNIEnv *e=nullptr;assert(call->vm->AttachCurrentThread(&e,nullptr)==JNI_OK);
+ pthread_barrier_wait(call->barrier);hookFunction(e,call->control,call->transaction,call->surface,call->regions);assert(!e->ExceptionCheck());
+ assert(call->vm->DetachCurrentThread()==JNI_OK);return nullptr;
+}
+static void concurrentFirstUse(JNIEnv *e){
+ auto bc=e->FindClass("android/view/SurfaceControl$Builder"),sc=e->FindClass("android/view/SurfaceControl"),tc=e->FindClass("android/view/SurfaceControl$Transaction");
+ auto builder=e->NewObject(bc,method(e,bc,"<init>","()V"));
+ e->CallObjectMethod(builder,method(e,bc,"setName","(Ljava/lang/String;)Landroid/view/SurfaceControl$Builder;"),e->NewStringUTF("NativeBlur hidden first-use test"));
+ e->CallObjectMethod(builder,method(e,bc,"setContainerLayer","()Landroid/view/SurfaceControl$Builder;"));
+ auto surface=e->CallObjectMethod(builder,method(e,bc,"build","()Landroid/view/SurfaceControl;"));assert(surface&&!e->ExceptionCheck());
+ auto rc=e->FindClass("android/view/SemBlurRegionData");auto localRegions=e->NewObjectArray(0,rc,nullptr);
+ auto regions=(jobjectArray)e->NewGlobalRef(localRegions);auto control=(jclass)e->NewGlobalRef(sc);
+ JavaVM *vm=nullptr;assert(e->GetJavaVM(&vm)==JNI_OK);pthread_barrier_t barrier;assert(pthread_barrier_init(&barrier,nullptr,8)==0);
+ pthread_t threads[8];RaceCall calls[8]{};jobject transactions[8]{};
+ auto tn=e->GetFieldID(tc,"mNativeObject","J"),sn=e->GetFieldID(sc,"mNativeObject","J");
+ for(int i=0;i<8;i++){
+  transactions[i]=e->NewObject(tc,method(e,tc,"<init>","()V"));
+  calls[i]={vm,control,regions,e->GetLongField(transactions[i],tn),e->GetLongField(surface,sn),&barrier};
+  assert(pthread_create(&threads[i],nullptr,firstUseWorker,&calls[i])==0);
+ }
+ for(int i=0;i<8;i++){assert(pthread_join(threads[i],nullptr)==0);e->CallVoidMethod(transactions[i],method(e,tc,"close","()V"));}
+ pthread_barrier_destroy(&barrier);e->DeleteGlobalRef(regions);e->DeleteGlobalRef(control);
+ e->CallVoidMethod(surface,method(e,sc,"release","()V"));assert(!e->ExceptionCheck());puts("Concurrent first-use initialization passed (8 attached threads).");
+}
+
 static unsigned capturePixel(JNIEnv *e,jobject root){
  auto bc=e->FindClass("android/window/ScreenCaptureInternal$LayerCaptureArgs$Builder");
  auto builder=e->NewObject(bc,method(e,bc,"<init>","(Landroid/view/SurfaceControl;)V"),root);
@@ -111,8 +144,11 @@ static void offscreenCurveTest(JNIEnv *e){
 }
 
 extern "C" __attribute__((visibility("default"))) void Java_BlurBridgeTest_run(JNIEnv *e,jclass){
+ printf("NativeBlur fixture PID=%d\n",getpid());fflush(stdout);
  installModuleFixture(e);
  if(unloaded){puts("Excluded process received no JNI hook.");return;}
+ if(getenv("NATIVEBLUR_TEST_NO_BLUR")&&!strcmp(getenv("NATIVEBLUR_TEST_NO_BLUR"),"1")){puts("Blur API not called.");return;}
  schema.rectClass=e->FindClass("android/graphics/Rect");assert(schema.rectClass&&!e->ExceptionCheck());
+ if(getenv("NATIVEBLUR_TEST_RACE")&&!strcmp(getenv("NATIVEBLUR_TEST_RACE"),"1"))concurrentFirstUse(e);
  offscreenCurveTest(e);
 }

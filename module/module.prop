@@ -1,6 +1,6 @@
 id=enable_live_blur
 name=Samsung Native Live Blur
-version=1.4.3
-versionCode=8
+version=1.5.0
+versionCode=9
 author=Local
-description=Samsung native JNI blur bridge and original SM-S942B color-curve renderer for this SM-A576B build. Pins GLES and includes first-failure stock-renderer recovery. Zygisk Next and reboot required.
+description=App-wide Samsung native JNI blur support and original SM-S942B color-curve renderer for this SM-A576B build. Pins GLES and includes first-failure stock-renderer recovery. Zygisk Next and reboot required.

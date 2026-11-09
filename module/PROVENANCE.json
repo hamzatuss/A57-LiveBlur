@@ -15,5 +15,5 @@
     "Dependency and symbol checks",
     "Isolated mount rollback test"
   ],
-  "visualValidation": "Previously working notification blur/color curve on the target. v1.4.2 direct Vulkan startup failed; v1.4.3 GLES startup and recovery changes await real reboot confirmation."
+  "visualValidation": "v1.4.3 flagship renderer verified active on GLES with a passed boot trial. Offscreen blur/curve checks passed for v1.5.0 app-wide JNI scope; individual real-app UI confirmation pending."
 }

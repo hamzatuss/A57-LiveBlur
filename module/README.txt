@@ -1,6 +1,6 @@
-Samsung Native Live Blur v1.4.3
+Samsung Native Live Blur v1.5.0
 Target build: samsung/a57xnaeea/a57x:17/CP2A.260605.016/A576BXXS6BZJ2_OXM6BZJ2:user/release-keys
-Payload: JNI bridge, donor libraries, feature overlays, and original SM-S942B SurfaceFlinger. Samsung donor and renderer binaries are unchanged; the JNI module now also covers the app chooser.
+Payload: JNI bridge, donor libraries, feature overlays, and original SM-S942B SurfaceFlinger. Samsung donor and renderer binaries are unchanged; the JNI module covers eligible app processes.
 Install manually through KernelSU, then reboot. Requires working Zygisk Next.
 Uses enable_live_blur ID and updates that module. On installation, automatically disables the old native_blur_renderer ID to prevent duplicate mounts.
 No skip_mount marker: feature XML overlays are retained. Renderer is outside system/ and uses its guarded read-only bind mount.
@@ -13,3 +13,5 @@ v1.4.2 hooks the exact system:ui process used by Open with, plus com.android.int
 v1.4.3 selects debug.renderengine.backend=skiaglthreaded before starting the donor renderer. This avoids the direct Skia Vulkan startup path that failed on this phone.
 The watchdog now reacts to the first restarting state or confirmed donor exit, uses nsenter -F for correct PID tracking, and has a verified stock-backup bind fallback.
 These paths passed isolated tests. A real reboot with this update still needs confirmation.
+v1.5.0 replaces the app allowlist with app-wide coverage, including Samsung apps, third-party apps and subprocesses. system_server, the core system process and child zygotes are excluded. Existing Zygisk exclusions still apply.
+Donor libraries are mapped during specialization; donor JNI caches initialize only on the first extended-blur call, with initialization serialized across threads. Apps and framework widgets control where blur is requested.

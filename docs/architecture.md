@@ -12,7 +12,7 @@ Original donor runtime SHA-256: `94426b4178088372552ecbb35905bd4ebfe3ce726cbe751
 
 The release does not establish the original donor device/build. Only the SONAME was renamed in the supplied donor; executable sections were checked unchanged. The SurfaceControl registrar is pinned at `0x1724d0`; the extended-blur routine is at `0x2276cc`. The loader verifies the registrar offset and routine entry bytes.
 
-The module temporarily substitutes the current thread's JNI RegisterNatives callback while invoking the donor registrar to initialize caches. It suppresses 154 unrelated registrations and restores the original JNI table. Only the extended-blur method is hooked in selected app processes; system_server and ordinary apps are excluded.
+The module temporarily substitutes the current thread's JNI RegisterNatives callback while invoking the donor registrar to initialize caches. It suppresses 154 unrelated registrations and restores the original JNI table. In v1.5.0, donor mappings are prepared during app specialization and that JNI initialization is deferred until the first extended-blur call. Initialization is serialized per app process; the original native entry remains a fallback if initialization reports failure. The extended-blur method is hooked across eligible app processes; system_server, core process launchers and child zygotes are excluded.
 
 Zygisk API header: https://github.com/topjohnwu/zygisk-module-sample at commit `7bb941ac8edfcffd1d23761e401c45ca95409dc1`, API version 4.
 
@@ -61,3 +61,13 @@ The repaired module sets debug.renderengine.backend=skiaglthreaded in its early 
 The old watchdog sampled every two seconds, could miss one-second startup attempts and had a literal-dollar PID-cleanup typo. v1.4.3 polls every quarter second, checks init.svc.surfaceflinger for restarting, detects loss of a confirmed donor PID, and uses nsenter -F so the launch PID and shell PID agree. Cleanup uses the correct shell PID. Recovery can bind a checksum-verified, executable stock backup if ordinary unmount fails.
 
 Private integration tests verified backend pin ordering, pin-failure refusal, existing-donor adoption, disabled/previous-boot/unknown-hash guards, status-only Action, first-restart rollback, next-poll PID-loss rollback, PID cleanup, stock-backup recovery and staged update marker cleanup. Android property writes and service restarts were intercepted. No live renderer or installed module was modified during these tests. Real cold-boot confirmation remains pending user installation.
+
+## v1.5.0 app-wide coverage
+
+The package allowlist was removed from preAppSpecialize. The app callback accepts named app processes while excluding child zygotes and core names system_server, system, zygote, zygote64 and webview_zygote. The server-specialization callback still unloads without hooking. This affects only processes receiving the module from Zygisk; its configured exclusions remain effective.
+
+The loader maps and validates donor libraries before app sandbox restrictions apply. It does not initialize donor JNI caches at that point. The first extended-blur call initializes caches under a mutex, publishes completion with acquire/release synchronization, and then invokes the original donor routine. Apps that never call the API retain no donor JNI-cache initialization. Native Samsung executable sections remain unchanged.
+
+Eighteen isolated process-scope scenarios passed on the supported phone: app/chooser/SystemUI names, app subprocesses, a multi-user UID case, a no-blur case, and server/core/child-zygote exclusions. Eleven rendered checkerboard cases produced baseline 0xff000000, ordinary blur 0xff757575 and Samsung curve 0xffcdcdcd. Eight attached threads completed concurrent first use without errors; the log showed exactly one donor cache initialization. The no-blur case installed the hook without initializing those caches. These fixtures simulate specialization arguments in root runtimes rather than launching real apps under their SELinux domains.
+
+The Samsung donor libraries, renderer and v1.4.3 GLES/recovery scripts are unchanged. The v1.4.3 renderer was verified active with skiaglthreaded and a passed boot trial. Individual app UI confirmation for v1.5.0 remains pending installation.
