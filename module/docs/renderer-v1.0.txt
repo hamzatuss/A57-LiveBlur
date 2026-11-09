@@ -1,0 +1,12 @@
+Samsung Native Color Curve Renderer
+Uses the unchanged official SM-S942B S942BXXU5BZJA SurfaceFlinger.
+Target build: samsung/a57xnaeea/a57x:17/CP2A.260605.016/A576BXXS6BZJ2_OXM6BZJ2:user/release-keys
+Provides Samsung ColorCurveEffect shader and Samsung effect path implementation absent from this phone renderer.
+Retains current system libraries and the existing selective JNI bridge.
+No system partition is flashed. Uses skip_mount plus a guarded init-namespace bind mount.
+Boot trial verifies the running executable hash and watches for repeated crashes or failed boot completion.
+A failed trial restores stock via unmount and disables only this renderer module, preserving enable_live_blur.
+A previous unfinished trial is skipped on next boot.
+Undo: disable/remove native_blur_renderer and reboot. The JNI bridge stays installed.
+The native implementation is original; visual output and performance still require on-device testing.
+Status: /data/adb/modules/native_blur_renderer/renderer-status.log

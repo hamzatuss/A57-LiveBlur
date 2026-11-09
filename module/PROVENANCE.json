@@ -1,0 +1,19 @@
+{
+  "source": "Official Samsung firmware distribution",
+  "model": "SM-S942B",
+  "region": "EUX",
+  "firmware": "S942BXXU5BZJA",
+  "archive": "SM-S942B_2_20261016025731_0iaygqx1ga_fac.zip.enc4",
+  "partition": "system_a",
+  "path": "/system/bin/surfaceflinger",
+  "sha256": "103c5493947529c46bd46ad7e164c581ed39095ab24aee973e3d87b8932842dc",
+  "originalRendererSha256": "5bee19df69e0f2b9cb32dce7fd02c37857c01cd7c328e2f5a9daab04402e1dad",
+  "modifications": "None to donor executable",
+  "validation": [
+    "Full AP ZIP CRC32 and length",
+    "LP geometry and metadata SHA256",
+    "Dependency and symbol checks",
+    "Isolated mount rollback test"
+  ],
+  "visualValidation": "Pending reboot"
+}

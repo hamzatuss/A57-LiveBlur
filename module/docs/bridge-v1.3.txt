@@ -1,0 +1,17 @@
+Samsung Native Blur Donor v1.3
+Selective KernelSU/Zygisk module for this SM-A576B build.
+Uses the real donor nativeSetBlurRegionsEx with unchanged arguments and executable code.
+Does not use the approximate v1.2 bridge. v1.2 was not installed.
+Stock libandroid_runtime.so stays installed. Only SystemUI, Samsung launcher, AOD and Dressroom are hooked.
+The donor SONAME is renamed; its executable sections remain byte-for-byte unchanged.
+Initializes donor JNI caches while suppressing 154 unrelated native registrations.
+Four unavailable, unrelated BLAST imports are guarded by aborting traps. Tested blur calls do not use them.
+Source: https://github.com/enderbk0/a36toflagship/releases/tag/1.0.6
+The original donor device/build is not established by the third-party release metadata.
+Actual donor code does not guarantee identical output or performance across different graphics stacks.
+Validation: isolated Android tests, hidden native layer submission, and production module entry/JNI hook test.
+Visual behavior still requires reboot and on-device verification.
+Requires enabled Zygisk Next. Reboot after installing.
+Undo: disable/remove enable_live_blur and reboot.
+Logs: su -c 'logcat -d -s NativeBlurDonor'
+Firmware-specific: runtime skips donor hook on a fingerprint mismatch.

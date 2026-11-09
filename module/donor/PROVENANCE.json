@@ -1,0 +1,10 @@
+{
+  "source": "https://github.com/enderbk0/a36toflagship/releases/tag/1.0.6",
+  "originalDonorDeviceAndBuild": "Not established",
+  "originalSha256": "94426b4178088372552ecbb35905bd4ebfe3ce726cbe751690b72c618e1c3125",
+  "renamedSha256": "f8eea951c32e33fde128f93cd77a40724db1c287f5edc16c5b67741fd787757c",
+  "executableSectionsSha256": "e4da17d01f85347f01533084064b856ec15eb0b552ed83ab1d71ff89a6d7f8e7",
+  "change": "SONAME only; executable sections unchanged",
+  "nativeOffset": "0x2276cc",
+  "registrarOffset": "0x1724d0"
+}

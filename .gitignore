@@ -1,0 +1,10 @@
+/build/
+/dist/
+node_modules/
+*.img
+*.raw
+*.enc4
+*.apk
+*.log
+trial-pending
+renderer-disabled
