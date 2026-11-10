@@ -24,6 +24,13 @@ The package updates the existing `enable_live_blur` module. During installation 
 
 Version 1.5.1 fixes renderer startup after module updates: a retained bind mount could refer to a deleted executable even though its checksum still matched. Android then lost its graphics linker namespaces and the donor crashed; recovery restored stock, removing color curves. Startup now compares file identity and refreshes stale mounts. The failure and namespace recovery were reproduced with a harmless executable in a private mount namespace. Live UI confirmation of this release remains pending installation and a full reboot.
 
+## Screenshots
+
+| | |
+|:---:|:---:|
+| ![Enabled](assets/screenshots/Screenshot_20261110_031313_One UI Home.jpg) | ![Disabled](assets/screenshots/Screenshot_20261110_031507_One UI Home.jpg) |
+| **Enabled** | **Disabled** |
+
 ## How it works
 
 - Enables the required background-blur property and Samsung floating-feature XML flag.
