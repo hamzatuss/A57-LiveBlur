@@ -28,7 +28,7 @@ Version 1.5.1 fixes renderer startup after module updates: a retained bind mount
 
 | | |
 |:---:|:---:|
-| ![Enabled](assets/screenshots/Screenshot_20261110_031313_One UI Home.jpg) | ![Disabled](assets/screenshots/Screenshot_20261110_031507_One UI Home.jpg) |
+| ![Enabled](assets/screenshots/enabled.jpg) | ![Disabled](assets/screenshots/disabled.jpg) |
 | **Enabled** | **Disabled** |
 
 ## How it works
