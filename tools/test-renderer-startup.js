@@ -9,6 +9,8 @@ if(fs.readlinkSync('/proc/self/ns/mnt')===fs.readlinkSync('/proc/1/ns/mnt'))thro
 fs.mkdirSync(path.join(root,'build'),{recursive:true});const dir=fs.mkdtempSync(path.join(root,'build/renderer-tests.')),bin=path.join(dir,'bin'),target=path.join(dir,'target'),bb=path.join(bin,'bb');
 fs.mkdirSync(bin);fs.mkdirSync(path.join(dir,'renderer'));fs.mkdirSync(path.join(dir,'backup'));
 const flag=n=>path.join(dir,n),hash=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex'),q=s=>"'"+s.replaceAll("'","'\\''")+"'";
+const linkerFixture=path.join(root,'build/linker-namespace-fixture');
+if(!fs.existsSync(linkerFixture))throw Error('Build tools/linker-namespace-fixture.c first; see README startup checks');
 const conf=fs.readFileSync(path.join(moduleDir,'renderer.conf'),'utf8'),stock=conf.match(/^STOCK_SHA256=(.*)$/m)[1],donor=conf.match(/^DONOR_SHA256=(.*)$/m)[1],stockFile=path.join(moduleDir,'backup/surfaceflinger.stock');
 fs.copyFileSync(stockFile,target);fs.copyFileSync(stockFile,flag('backup/surfaceflinger.stock'));fs.copyFileSync(path.join(moduleDir,'renderer/surfaceflinger'),flag('renderer/surfaceflinger'));fs.writeFileSync(flag('renderer.conf'),conf);
 const writeExe=(p,s)=>fs.writeFileSync(p,s,{mode:0o755});
@@ -29,6 +31,25 @@ try{
  run('post-fs-data.sh');assert(hash(target)===donor&&!exists('renderer-disabled'),'Stock startup failed');assert(fs.readFileSync(flag('backend'),'utf8').trim()==='skiaglthreaded','GLES backend not pinned');
  assert(fs.readFileSync(flag('trial-pending'),'utf8').trim()===fs.readFileSync('/proc/sys/kernel/random/boot_id','utf8').trim(),'Trial boot ID missing');run('post-fs-data.sh');unmount();console.log('PASS: GLES pin precedes stock startup; repeated setup creates one bind');clear();
  mountDonor();fs.writeFileSync(flag('backend'),'skiavkthreaded\n');run('post-fs-data.sh');assert(hash(target)===donor&&fs.readFileSync(flag('backend'),'utf8').trim()==='skiaglthreaded','Existing donor adoption/pin failed');unmount();console.log('PASS: existing donor is reused and backend corrected');clear();
+ // Reproduce an update replacing the source while the old inode stays bound.
+ mountDonor();fs.unlinkSync(flag('renderer/surfaceflinger'));fs.copyFileSync(path.join(moduleDir,'renderer/surfaceflinger'),flag('renderer/surfaceflinger'));
+ assert(fs.statSync(target).nlink===0&&hash(target)===donor,'Deleted mount fixture failed');
+ run('post-fs-data.sh');assert(hash(target)===donor&&fs.statSync(target).ino===fs.statSync(flag('renderer/surfaceflinger')).ino&&fs.statSync(target).nlink>0,'Stale donor mount not refreshed');
+ run('post-fs-data.sh');unmount();console.log('PASS: identical-checksum deleted donor inode is refreshed; no extra bind remains');clear();
+ // Exercise the real Android linker with a harmless executable. The actual
+ // display executable and live namespace are never used as mount targets.
+ const probeSource=flag('probe-source'),probeTarget=flag('probe-target');fs.copyFileSync(linkerFixture,probeSource);fs.copyFileSync(linkerFixture,probeTarget);fs.chmodSync(probeSource,0o755);fs.chmodSync(probeTarget,0o755);
+ const probe=()=>cp.spawnSync(probeTarget,[],{encoding:'utf8',env});
+ cp.execFileSync('/system/bin/mount',['-o','bind',probeSource,probeTarget]);
+ try {
+  let r=probe();assert(r.status===0&&r.stdout.includes('sphal=1 default=1'),'Healthy linker namespaces missing: '+r.stdout+r.stderr);
+  fs.unlinkSync(probeSource);fs.copyFileSync(linkerFixture,probeSource);fs.chmodSync(probeSource,0o755);
+  r=probe();assert(r.status===2&&r.stdout.includes('realpath=FAILED')&&r.stdout.includes('sphal=0 default=0'),'Deleted-inode linker failure not reproduced: '+r.stdout+r.stderr);
+  cp.execFileSync('/system/bin/umount',[probeTarget]);cp.execFileSync('/system/bin/mount',['-o','bind',probeSource,probeTarget]);
+  r=probe();assert(r.status===0&&r.stdout.includes('sphal=1 default=1'),'Rebind did not restore linker namespaces: '+r.stdout+r.stderr);
+  console.log('PASS: real linker loses graphics namespaces on deleted inode; fresh bind restores them');
+ } finally {cp.spawnSync('/system/bin/umount',[probeTarget])}
+
  fs.writeFileSync(flag('renderer-disabled'),'');run('post-fs-data.sh');assert(hash(target)===stock,'Disabled renderer mounted');console.log('PASS: explicit disabled marker respected');clear();
  fs.writeFileSync(flag('trial-pending'),'different-boot\n');run('post-fs-data.sh');assert(exists('renderer-disabled')&&hash(target)===stock,'Prior boot not guarded');console.log('PASS: failed previous boot keeps stock');clear();
  fs.writeFileSync(target,'unknown renderer');const unknown=hash(target);run('post-fs-data.sh');assert(hash(target)===unknown&&!exists('trial-pending'),'Unknown renderer replaced');fs.copyFileSync(stockFile,target);console.log('PASS: unknown renderer refused');clear();

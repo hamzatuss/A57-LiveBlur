@@ -14,7 +14,7 @@ The installer and JNI bridge check the fingerprint. Other firmware needs a separ
 
 ## Download and install
 
-[Download v1.5.0](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.5.0/Samsung-Native-Live-Blur-v1.5.0.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.5.0/SHA256SUMS.txt)
+[Download v1.5.1](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.5.1/Samsung-Native-Live-Blur-v1.5.1.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.5.1/SHA256SUMS.txt)
 
 1. Have KernelSU and a working Zygisk implementation enabled. The original setup used Zygisk Next.
 2. Install the ZIP through KernelSU.
@@ -22,7 +22,7 @@ The installer and JNI bridge check the fingerprint. Other firmware needs a separ
 
 The package updates the existing `enable_live_blur` module. During installation it disables the old standalone `native_blur_renderer` module, if present, to prevent duplicate renderer mounts. The package contains both components.
 
-The standalone components were confirmed working on the author's phone. Version 1.4 could skip an already-mounted flagship renderer, and its Action button could disable that renderer. Version 1.4.1 fixes both behaviors. Version 1.4.2 adds the framework app chooser and Android IntentResolver processes. Notification blur and color curves previously worked, but a v1.4.2 boot failed while initializing direct Skia Vulkan and Android rescue-rebooted. Version 1.4.3 pins the working GLES backend and improves first-failure recovery. The v1.4.3 GLES renderer is now active and has passed its on-device boot check. Version 1.5.0 extends JNI coverage to app processes generally; live UI behavior across individual apps after this update still needs confirmation.
+Version 1.5.1 fixes renderer startup after module updates: a retained bind mount could refer to a deleted executable even though its checksum still matched. Android then lost its graphics linker namespaces and the donor crashed; recovery restored stock, removing color curves. Startup now compares file identity and refreshes stale mounts. The failure and namespace recovery were reproduced with a harmless executable in a private mount namespace. Live UI confirmation of this release remains pending installation and a full reboot.
 
 ## How it works
 
@@ -70,9 +70,17 @@ The build uses the included, pinned donor library and the phone's system librari
 
 ## Startup regression checks
 
+Build the harmless linker fixture in Termux first:
+
+`mkdir -p build`
+
+`clang -O2 -fPIE -pie tools/linker-namespace-fixture.c -ldl -Wl,--no-as-needed /system/lib64/libdl_android.so -Wl,--dynamic-linker=/system/bin/linker64 -o build/linker-namespace-fixture`
+
+Then run:
+
 `su -c '/data/data/com.termux/files/usr/bin/node tools/test-renderer-startup.js'`
 
-Run from the repository directory on the supported phone. Tests use a private namespace and temporary files. Android property writes and display-service restart requests are mocked; installed modules and live properties remain unchanged. They cover backend selection before mount, failed-pin refusal, adoption, boot guards, immediate recovery, PID cleanup and backup-bind recovery.
+Run from the repository directory on the supported phone. Tests use a private namespace and temporary files. Android property writes and display-service restart requests are mocked; installed modules and live properties remain unchanged. They cover backend selection before mount, failed-pin refusal, healthy adoption, stale-inode refresh after updates, real Android linker namespace loss/recovery, boot guards, immediate recovery, PID cleanup and backup-bind recovery.
 
 ## App coverage
 

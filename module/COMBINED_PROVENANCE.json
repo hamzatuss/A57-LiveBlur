@@ -8,6 +8,6 @@
   "target": "samsung/a57xnaeea/a57x:17/CP2A.260605.016/A576BXXS6BZJ2_OXM6BZJ2:user/release-keys",
   "rendererSha256": "103c5493947529c46bd46ad7e164c581ed39095ab24aee973e3d87b8932842dc",
   "zygiskSha256": "ec9c978234c739fb60dc943b797da127294e52b2c81b30dfb7d0e9ecb42db094",
-  "modifications": "v1.5.0: app-wide extended-blur hook scope, excluding core/server/child-zygote processes; donor JNI caches initialized on demand with thread-safe publication. Samsung donor libraries, renderer and GLES/recovery behavior unchanged.",
-  "validation": "Eighteen isolated process-scope scenarios passed. Eleven offscreen blur/curve cases passed; eight-thread first use initialized caches exactly once; unused API did not initialize caches. Existing v1.4.3 GLES renderer and boot trial verified active. Individual real-app UI behavior after installation remains pending."
+  "modifications": "v1.5.1: compare renderer device/inode identity before reusing a matching-hash mount; replace stale deleted-inode binds after updates. Samsung binaries, app-wide JNI bridge, GLES selection and crash recovery unchanged from v1.5.0.",
+  "validation": "Private-namespace reproduction of deleted executable losing Android graphics linker namespaces and fresh-bind recovery. Production startup regression checks include identical-checksum stale inode replacement. Live installation and UI confirmation pending."
 }

@@ -22,25 +22,48 @@ fi
 actual=$(sha256sum "$MODDIR/renderer/surfaceflinger")
 [ "${actual%% *}" = "$DONOR_SHA256" ] || { status 'Skipped: donor checksum mismatch'; exit 0; }
 chcon u:object_r:surfaceflinger_exec:s0 "$MODDIR/renderer/surfaceflinger" || { status 'Skipped: executable label failed'; exit 0; }
-actual=$("$BB" nsenter -t 1 -m /system/bin/sha256sum /system/bin/surfaceflinger)
-case "${actual%% *}" in
-    "$STOCK_SHA256")
-        if ! "$BB" nsenter -t 1 -m /system/bin/mount -o bind "$MODDIR/renderer/surfaceflinger" /system/bin/surfaceflinger; then
-            status 'Skipped: renderer bind failed'
-            exit 0
-        fi
-        if ! "$BB" nsenter -t 1 -m "$BB" mount -o remount,bind,ro,suid,dev,exec "$MODDIR/renderer/surfaceflinger" /system/bin/surfaceflinger; then
-            "$BB" nsenter -t 1 -m /system/bin/umount /system/bin/surfaceflinger
-            status 'Skipped: executable mount flags failed'
-            exit 0
-        fi
-        status 'Flagship renderer mounted read-only'
-        ;;
+mounted_hash() {
+    mounted=$("$BB" nsenter -t 1 -m /system/bin/sha256sum /system/bin/surfaceflinger) || return 1
+    printf '%s\n' "${mounted%% *}"
+}
+bind_renderer() {
+    if ! "$BB" nsenter -t 1 -m /system/bin/mount -o bind "$MODDIR/renderer/surfaceflinger" /system/bin/surfaceflinger; then
+        status 'Skipped: renderer bind failed'
+        return 1
+    fi
+    if ! "$BB" nsenter -t 1 -m "$BB" mount -o remount,bind,ro,suid,dev,exec "$MODDIR/renderer/surfaceflinger" /system/bin/surfaceflinger; then
+        "$BB" nsenter -t 1 -m /system/bin/umount /system/bin/surfaceflinger
+        status 'Skipped: executable mount flags failed'
+        return 1
+    fi
+    status 'Flagship renderer mounted read-only'
+}
+actual=$(mounted_hash) || { status 'Skipped: cannot read mounted renderer'; exit 0; }
+case "$actual" in
+    "$STOCK_SHA256") bind_renderer || exit 0 ;;
     "$DONOR_SHA256")
-        status 'Verified flagship renderer already mounted; reusing it without another bind'
+        # An update can unlink the inode behind an existing bind without
+        # changing its bytes. realpath(/proc/self/exe) then fails in the linker,
+        # losing the system/sphal namespaces required by Samsung's GPU driver.
+        # Compare file identities inside init's namespace, not only hashes.
+        source_id=$("$BB" nsenter -t 1 -m /system/bin/stat -Lc '%d:%i' "$MODDIR/renderer/surfaceflinger") || exit 0
+        mounted_id=$("$BB" nsenter -t 1 -m /system/bin/stat -Lc '%d:%i' /system/bin/surfaceflinger) || exit 0
+        if [ -n "$source_id" ] && [ "$mounted_id" = "$source_id" ]; then
+            status 'Verified flagship renderer already mounted from current file; reusing it without another bind'
+        else
+            status 'Stale flagship mount detected after update; refreshing executable inode'
+            attempts=0
+            while [ "$actual" = "$DONOR_SHA256" ] && [ "$attempts" -lt 3 ]; do
+                "$BB" nsenter -t 1 -m /system/bin/umount /system/bin/surfaceflinger || { status 'Skipped: cannot remove stale renderer mount'; exit 0; }
+                attempts=$((attempts+1))
+                actual=$(mounted_hash) || exit 0
+            done
+            [ "$actual" = "$STOCK_SHA256" ] || { status "Skipped: unexpected renderer below stale mount $actual"; exit 0; }
+            bind_renderer || exit 0
+        fi
         ;;
     *)
-        status "Skipped: unknown mounted renderer hash ${actual%% *}"
+        status "Skipped: unknown mounted renderer hash $actual"
         exit 0
         ;;
 esac
