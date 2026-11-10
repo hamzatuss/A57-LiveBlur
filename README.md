@@ -14,7 +14,14 @@ Samsung flagship live blur and color curves for the Galaxy A57 5G, packaged as a
 
 Built for **Samsung Galaxy A57 5G (SM-A576B), Android 17 / One UI 9**, on firmware **A576BXXS6BZJ2 / OXM6BZJ2**.
 
-Requires **KernelSU** and a working **Zygisk** implementation, such as Zygisk Next. The installer checks the exact firmware fingerprint; other builds are unsupported.
+The installer checks the exact firmware fingerprint; other builds are unsupported.
+
+## Requirements
+
+- Samsung Galaxy A57 5G **SM-A576B** on the firmware listed above.
+- Root access through **KernelSU**, with its manager installed.
+- A working **Zygisk** implementation enabled, such as **Zygisk Next**.
+- A full phone reboot after installation.
 
 ## Download and install
 
@@ -22,8 +29,6 @@ Requires **KernelSU** and a working **Zygisk** implementation, such as Zygisk Ne
 
 1. Install the ZIP through KernelSU.
 2. Fully reboot your phone.
-
-Updates replace the existing `enable_live_blur` module. The installer also disables the old standalone `native_blur_renderer` module if present.
 
 ## What it does
 
