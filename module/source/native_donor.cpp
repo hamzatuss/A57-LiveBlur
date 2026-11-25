@@ -1,6 +1,7 @@
 #include <sys/types.h>
 #include "zygisk.hpp"
 #include "donor_loader.hpp"
+#include "app_scope.hpp"
 #include "expected_build.hpp"
 #include <sys/system_properties.h>
 #include <pthread.h>
@@ -46,6 +47,7 @@ class NativeBlurModule:public zygisk::ModuleBase {
   }
   int fd=api->getModuleDir();
   if(fd<0){__android_log_print(ANDROID_LOG_ERROR,"NativeBlurDonor","Module directory unavailable");api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);return;}
+  if(scope::excluded(fd,process)){close(fd);api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);return;}
   char link[64],root[4096],path[4200];snprintf(link,sizeof(link),"/proc/self/fd/%d",fd);
   ssize_t n=readlink(link,root,sizeof(root)-1);close(fd);
   if(n<=0){__android_log_print(ANDROID_LOG_ERROR,"NativeBlurDonor","Module path unavailable");api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);return;}

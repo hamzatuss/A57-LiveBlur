@@ -25,7 +25,7 @@ The installer checks the exact firmware fingerprint; other builds are unsupporte
 
 ## Download and install
 
-[Download v1.5.1](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.5.1/Samsung-Native-Live-Blur-v1.5.1.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.5.1/SHA256SUMS.txt)
+[Download v1.5.2](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.5.2/Samsung-Native-Live-Blur-v1.5.2.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.5.2/SHA256SUMS.txt)
 
 1. Install the ZIP through KernelSU.
 2. Fully reboot your phone.
@@ -34,7 +34,13 @@ The installer checks the exact firmware fingerprint; other builds are unsupporte
 
 Enables Samsung's native blur API and uses the original flagship SurfaceFlinger renderer for color curves. Supports eligible Samsung and third-party app processes, including shared framework dialogs. Apps must request the effect themselves; configured Zygisk exclusions still apply.
 
-Version 1.5.1 fixes stale renderer mounts after updates that could make color curves disappear. System partitions are not flashed.
+Version 1.5.2 adds per-app exclusions to avoid loading blur libraries into apps that do not need them. System partitions are not flashed.
+
+## Per-app exclusions
+
+Edit `/data/adb/modules/enable_live_blur/excluded-apps.txt` as root to list apps that should not receive the blur bridge. Use one package name per line; its subprocesses are included. Restart the app after changes. Duck Detector (`com.eltavine.duckdetector`) is excluded by default. Excluded apps do not receive this module’s native blur support.
+
+This setting prevents injection into excluded apps; it does not hide root, falsify scanner results, or remove mount artifacts created elsewhere.
 
 ## Troubleshooting and removal
 

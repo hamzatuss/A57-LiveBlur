@@ -36,6 +36,7 @@ static void installModuleFixture(JNIEnv *e){
  jboolean child=getenv("NATIVEBLUR_TEST_CHILD_ZYGOTE")&&!strcmp(getenv("NATIVEBLUR_TEST_CHILD_ZYGOTE"),"1");
  zygisk::AppSpecializeArgs args{uid,gid,gids,flags,limits,mount,se,name,isa,dir,nullptr,&child,nullptr,nullptr,nullptr,nullptr,nullptr};
  if(getenv("NATIVEBLUR_TEST_SERVER")&&!strcmp(getenv("NATIVEBLUR_TEST_SERVER"),"1"))moduleAbi->preServerSpecialize(moduleAbi->impl,nullptr);else moduleAbi->preAppSpecialize(moduleAbi->impl,&args);
+ if(unloaded){assert(!dlopen("libblur_loader.so",RTLD_NOW|RTLD_NOLOAD));assert(!dlopen("libblur_donor.so",RTLD_NOW|RTLD_NOLOAD));}
  bool expect=!(getenv("NATIVEBLUR_EXPECT_NO_HOOK")&&!strcmp(getenv("NATIVEBLUR_EXPECT_NO_HOOK"),"1"));assert(hooked==(expect?1u:0u)&&unloaded!=expect&&!e->ExceptionCheck());
  puts("Production Zygisk module registered only the extended-blur method in the isolated runtime.");
 }

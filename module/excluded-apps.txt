@@ -1,0 +1,4 @@
+# Apps that should not receive the blur bridge or Samsung donor libraries.
+# One exact package/process name per line; includes its :subprocesses.
+# Changes take effect when the app process starts again.
+com.eltavine.duckdetector
