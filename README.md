@@ -25,7 +25,7 @@ The installer checks the exact firmware fingerprint; other builds are unsupporte
 
 ## Download and install
 
-[Download v1.5.2](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.5.2/Samsung-Native-Live-Blur-v1.5.2.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.5.2/SHA256SUMS.txt)
+[Download v1.6.0](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.0/Samsung-Native-Live-Blur-v1.6.0.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.0/SHA256SUMS.txt)
 
 1. Install the ZIP through KernelSU.
 2. Fully reboot your phone.
@@ -34,7 +34,11 @@ The installer checks the exact firmware fingerprint; other builds are unsupporte
 
 Enables Samsung's native blur API and uses the original flagship SurfaceFlinger renderer for color curves. Supports eligible Samsung and third-party app processes, including shared framework dialogs. Apps must request the effect themselves; configured Zygisk exclusions still apply.
 
-Version 1.5.2 adds per-app exclusions to avoid loading blur libraries into apps that do not need them. System partitions are not flashed.
+Version 1.6.0 enables the donor’s `HighEnd` launcher animation setting while retaining native blur and per-app exclusions. This selects the path in the installed One UI Home; it does not replace the launcher or enable hardware-specific AOD effects. System partitions are not flashed.
+
+## Optional Interpreter preview
+
+An **experimental AI preview** is available separately in the release assets. It adds donor Interpreter and enables its AI feature gates. It replaces the regular build using the same module ID. It is not a complete Galaxy AI port; speech, language downloads and effects on other AI-dependent apps have not been verified. See [compatibility details](docs/galaxy-ai.md) before choosing it.
 
 ## Per-app exclusions
 
