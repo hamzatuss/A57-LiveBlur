@@ -44,7 +44,3 @@ The harness uses separate root app_process test runtimes, simulated specializati
 ## Implementation details
 
 See [architecture.md](architecture.md) for pinned inputs, implementation history and validation records. Component attribution is in [NOTICE.md](../NOTICE.md).
-
-## Donor feature preview
-
-See [galaxy-ai.md](galaxy-ai.md) for the optional Interpreter builder, required pinned donor inputs, compatibility evidence and remaining runtime checks. The regular package contains only the HighEnd launcher setting alongside existing blur functionality.

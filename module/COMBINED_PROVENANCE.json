@@ -8,6 +8,6 @@
   "target": "samsung/a57xnaeea/a57x:17/CP2A.260605.016/A576BXXS6BZJ2_OXM6BZJ2:user/release-keys",
   "rendererSha256": "103c5493947529c46bd46ad7e164c581ed39095ab24aee973e3d87b8932842dc",
   "zygiskSha256": "6b2e7fcda02268c904fa87eebbeccec7435e74c1b60d92d26b1b915026dbc8ec",
-  "modifications": "v1.6.0: select original donor HighEnd launcher animation setting in both floating-feature overlays. Existing blur bridge, per-app exclusions, Samsung renderer and recovery unchanged. Optional Interpreter preview is built separately.",
-  "validation": "Launcher APK contains the animation feature key and HighEnd mode; donor XML specifies HighEnd. Regular XML diff is restricted to that key. This does not establish full flagship animation parity."
+  "modifications": "v1.6.1: restore blur-only scope with the same feature XMLs and native binaries as v1.5.2. Remove optional AI builder and animation additions. Retain per-app exclusions and renderer recovery.",
+  "validation": "Both feature XMLs match v1.5.2 byte-for-byte; native components and recovery remain unchanged. Packaging checksum and ZIP integrity checks apply."
 }
