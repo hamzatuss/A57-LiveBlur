@@ -25,7 +25,7 @@ The installer checks the exact firmware fingerprint; other builds are unsupporte
 
 ## Download and install
 
-[Download v1.6.3](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.3/Samsung-Native-Live-Blur-v1.6.3.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.3/SHA256SUMS.txt)
+[Download v1.6.4](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.4/Samsung-Native-Live-Blur-v1.6.4.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.4/SHA256SUMS.txt)
 
 1. Install the ZIP through KernelSU.
 2. Fully reboot your phone.
@@ -35,6 +35,8 @@ The installer checks the exact firmware fingerprint; other builds are unsupporte
 Enables Samsung's native blur API and uses the original flagship SurfaceFlinger renderer for color curves. Supports eligible Samsung and third-party app processes, including shared framework dialogs. Apps must request the effect themselves; configured Zygisk exclusions still apply.
 
 This release contains native blur and color curves with per-app exclusions, plus fullscreen AOD wallpaper and Samsung’s built-in AOD-to-lock-screen clock transition. After reboot, enable Always On Display and its wallpaper option in **Settings > Lock screen and AOD > Always On Display**. Available effects depend on the selected wallpaper, clock and AOD configuration.
+
+Version 1.6.4 supplies the missing framework drawing resource used by Samsung’s AOD dimming layer, so its wallpaper-switch logic can run.
 
 Everything is in one ZIP. If the standalone AOD FullScreen Enabler (`fullaodenable`) is installed, the installer disables it to prevent conflicting feature overlays. Fullscreen AOD can use more battery than a black AOD on this display. System partitions are not flashed. Older builds, including the discontinued AI/animation builds, are marked **Archived** in [Releases](https://github.com/hamzatuss/A57-LiveBlur/releases).
 

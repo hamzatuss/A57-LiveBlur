@@ -44,3 +44,7 @@ The harness uses separate root app_process test runtimes, simulated specializati
 ## Implementation details
 
 See [architecture.md](architecture.md) for pinned inputs, implementation history and validation records. Component attribution is in [NOTICE.md](../NOTICE.md).
+
+## AOD resource overlay
+
+The packaged APK is built from [overlay/aod-light-reveal](../overlay/aod-light-reveal) with `sh tools/build-aod-overlay.sh`. Requires aapt2, keytool and apksigner plus the supported phone’s framework-res.apk. The builder creates a local signing key in ignored build output and produces the static code-free overlay in module/system/product/overlay. Packaging requires this APK. No installation or overlay activation occurs during the build.

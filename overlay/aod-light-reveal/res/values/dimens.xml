@@ -1,0 +1,5 @@
+<resources>
+    <!-- Drawing origin only, not a brightness or panel capability override.
+         Fallback midpoint for the pinned 1080 x 2340 display; stock supplies 0. -->
+    <dimen name="physical_power_button_center_screen_location_y">1170px</dimen>
+</resources>
