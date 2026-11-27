@@ -25,7 +25,7 @@ The installer checks the exact firmware fingerprint; other builds are unsupporte
 
 ## Download and install
 
-[Download v1.6.5](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.5/Samsung-Native-Live-Blur-v1.6.5.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.5/SHA256SUMS.txt)
+[Download v1.6.6](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.6/Samsung-Native-Live-Blur-v1.6.6.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.6/SHA256SUMS.txt)
 
 1. Install the ZIP through KernelSU.
 2. Fully reboot your phone.
@@ -36,7 +36,7 @@ Enables Samsung's native blur API and uses the original flagship SurfaceFlinger 
 
 This release contains native blur and color curves with per-app exclusions, plus fullscreen AOD wallpaper and Samsung’s built-in AOD-to-lock-screen clock transition. After reboot, enable Always On Display and its wallpaper option in **Settings > Lock screen and AOD > Always On Display**. Available effects depend on the selected wallpaper, clock and AOD configuration.
 
-Version 1.6.5 adds a short refresh-rate boost during screen/AOD transitions. It requests the display’s supported high refresh rate for up to 1.5 seconds, then releases the request. Idle AOD keeps Samsung’s normal refresh policy. The selected 60-Hz mode, power saving and higher-priority display limits remain respected. Dimming behavior is unchanged.
+Version 1.6.6 adds a temporary SystemUI View-level frame-pacing request alongside the display-rate boost, then restores the previous request. It also corrects stale glass-clock state in AOD while preserving the clock opacity selected in the lock-screen editor. The clock correction is specific to Samsung Always On Display **8.9.67.3**; other app versions skip it. The selected 60-Hz mode, power saving and dimming behavior remain unchanged.
 
 Everything is in one ZIP. If the standalone AOD FullScreen Enabler (`fullaodenable`) is installed, the installer disables it to prevent conflicting feature overlays. Fullscreen AOD can use more battery than a black AOD on this display. System partitions are not flashed. Older builds, including the discontinued AI/animation builds, are marked **Archived** in [Releases](https://github.com/hamzatuss/A57-LiveBlur/releases).
 

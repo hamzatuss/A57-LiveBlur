@@ -3,11 +3,12 @@
     "jniBridge": "source/native_donor.cpp and zygisk/arm64-v8a.so",
     "donorRuntime": "donor/libblur_loader.so and donor/libblur_donor.so",
     "renderer": "renderer/surfaceflinger and renderer boot scripts",
-    "featureOverrides": "system.prop and system/ XML overlays"
+    "featureOverrides": "system.prop and system/ XML overlays",
+    "clockUiGuard": "source/clock_guard.hpp, source/clock-aod/ClockAodGuard.java and clock/clock-aod.dex"
   },
   "target": "samsung/a57xnaeea/a57x:17/CP2A.260605.016/A576BXXS6BZJ2_OXM6BZJ2:user/release-keys",
   "rendererSha256": "103c5493947529c46bd46ad7e164c581ed39095ab24aee973e3d87b8932842dc",
-  "zygiskSha256": "6b2e7fcda02268c904fa87eebbeccec7435e74c1b60d92d26b1b915026dbc8ec",
-  "modifications": "v1.6.5: add system-UID animation refresh listener using existing Samsung minimum-rate tokens, with a 1.5-second release and bounded wake guard. No preferences or dimming changes. Existing feature XMLs, AOD overlay, blur binaries and renderer recovery unchanged.",
-  "validation": "Native token probe showed 120Hz physical mode/desired range despite a test 60Hz cap; headless client render rate remained 60Hz. Real display-listener self-test acquired/released the vote and guard by deadline. This does not establish actual SystemUI animation FPS; visual/device frame confirmation remains required."
+  "zygiskSha256": "36c79adb4148f6d190a3fb58a057c491fb157c1b00d802fe2ebd1a2141832956",
+  "modifications": "v1.6.6: SystemUI-only in-memory helper for bounded View-level frame-pacing requests and version-checked AOD clock glass/doze state correction. Preserve editor opacity and existing blur/AOD/dimming features. No new ART/Java method hook; bootstrap uses the existing blur JNI callback.",
+  "validation": "Actual Samsung clock-color function on an unattached test object produced stale glass 0x00ffffff and corrected opaque AOD 0xffffffff at zero opacity. Isolated Android-view tests cover state correction/restore, native-owned state and animation exclusion, bounded traversal, requested 120fps and exact pacing restore/owner changes. Production JNI bootstrap and blur/curve regressions tested separately. Live SystemUI rendering/FPS and editor-path behavior require confirmation after installation."
 }

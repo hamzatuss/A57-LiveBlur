@@ -52,3 +52,9 @@ The packaged APK is built from [overlay/aod-light-reveal](../overlay/aod-light-r
 ## Transition refresh listener
 
 Set ANDROID_JAR to an API 35+ SDK android.jar and D8_JAR to build-tools lib/d8.jar, then run `sh tools/build-aod-refresh.sh`. Source is in module/source/aod-refresh; output is module/refresh/aod-refresh.dex. The helper uses Samsung display APIs only on the pinned firmware. `--self-test` briefly requests a vote and verifies timed release; `--probe` is a diagnostic panel-policy test, not a UI FPS benchmark. Run diagnostics only on the supported phone. The helper writes no preferences.
+
+## SystemUI clock and View-pacing helper
+
+With ANDROID_JAR and D8_JAR set, run `sh tools/build-clock-guard.sh` before repackaging changed Java source. Native bootstrap is in module/source/clock_guard.hpp and is rebuilt by tools/build-native.sh. Run `sh tools/test-clock-guard.sh` for isolated Android-view state/pacing tests. Set AOD_APK to the installed 8.9.67.3 base.apk and run `sh tools/test-samsung-clock-color.sh` for the actual Samsung color calculation on an unattached object. This last test uses constructor-free allocation only inside its standalone diagnostic process. No live SystemUI view is accessed.
+
+`node tools/test-native-blur.js --clock-bootstrap-only` checks in-memory DEX loading through the production native entry point; the full command also checks blur, color curves and process scope. Its synthetic application uses the framework package and does not register the live SystemUI callbacks. The view fixtures exercise those state operations separately.

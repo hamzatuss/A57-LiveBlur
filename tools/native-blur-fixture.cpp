@@ -34,6 +34,20 @@ static void installModuleFixture(JNIEnv *e){
  jint uid=getenv("NATIVEBLUR_TEST_UID")?atoi(getenv("NATIVEBLUR_TEST_UID")):10000,gid=uid,flags=0,mount=0;jintArray gids=nullptr;jobjectArray limits=nullptr;
  jstring se=nullptr,name=e->NewStringUTF(getenv("NATIVEBLUR_TEST_TARGET")?getenv("NATIVEBLUR_TEST_TARGET"):"system:ui"),isa=e->NewStringUTF("arm64"),dir=nullptr;
  jboolean child=getenv("NATIVEBLUR_TEST_CHILD_ZYGOTE")&&!strcmp(getenv("NATIVEBLUR_TEST_CHILD_ZYGOTE"),"1");
+ if(getenv("NATIVEBLUR_TEST_CLOCK_BOOTSTRAP")){
+  jclass looper=e->FindClass("android/os/Looper");assert(looper);
+  jmethodID myLooper=e->GetStaticMethodID(looper,"myLooper","()Landroid/os/Looper;"),prepare=e->GetStaticMethodID(looper,"prepareMainLooper","()V");assert(myLooper&&prepare);
+  if(!e->CallStaticObjectMethod(looper,myLooper))e->CallStaticVoidMethod(looper,prepare);assert(!e->ExceptionCheck());
+  jclass at=e->FindClass("android/app/ActivityThread");assert(at);
+  jmethodID systemMain=e->GetStaticMethodID(at,"systemMain","()Landroid/app/ActivityThread;");assert(systemMain);
+  jobject thread=e->CallStaticObjectMethod(at,systemMain);assert(thread&&!e->ExceptionCheck());
+  jmethodID getContext=e->GetMethodID(at,"getSystemContext","()Landroid/app/ContextImpl;");assert(getContext);
+  jobject context=e->CallObjectMethod(thread,getContext);assert(context&&!e->ExceptionCheck());
+  jclass appClass=e->FindClass("android/app/Application");assert(appClass);
+  jmethodID constructor=e->GetMethodID(appClass,"<init>","()V"),attach=e->GetMethodID(appClass,"attach","(Landroid/content/Context;)V");assert(constructor&&attach);
+  jobject app=e->NewObject(appClass,constructor);e->CallVoidMethod(app,attach,context);assert(!e->ExceptionCheck());
+  jfieldID initial=e->GetFieldID(at,"mInitialApplication","Landroid/app/Application;");assert(initial);e->SetObjectField(thread,initial,app);
+ }
  zygisk::AppSpecializeArgs args{uid,gid,gids,flags,limits,mount,se,name,isa,dir,nullptr,&child,nullptr,nullptr,nullptr,nullptr,nullptr};
  if(getenv("NATIVEBLUR_TEST_SERVER")&&!strcmp(getenv("NATIVEBLUR_TEST_SERVER"),"1"))moduleAbi->preServerSpecialize(moduleAbi->impl,nullptr);else moduleAbi->preAppSpecialize(moduleAbi->impl,&args);
  if(unloaded){assert(!dlopen("libblur_loader.so",RTLD_NOW|RTLD_NOLOAD));assert(!dlopen("libblur_donor.so",RTLD_NOW|RTLD_NOLOAD));}

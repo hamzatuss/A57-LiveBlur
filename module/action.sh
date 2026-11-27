@@ -24,4 +24,5 @@ fi
 echo "AOD wallpaper preference: $(settings get system aod_show_lockscreen_wallpaper)"
 echo "AOD dimming coordinate: $(cmd overlay lookup android android:dimen/physical_power_button_center_screen_location_y 2>/dev/null)"
 echo "Animation refresh helper PID: $(pidof a57-aod-refresh)"
+echo 'Clock/UI pacing diagnostics: logcat -d -s A57ClockAod'
 echo 'Status only. Use a full phone reboot after installing an update.'

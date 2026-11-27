@@ -14,3 +14,5 @@ renderer-watch.pid
 !/module/system/product/overlay/A57AodLightReveal.apk
 
 refresh-disabled
+
+clock-aod-disabled

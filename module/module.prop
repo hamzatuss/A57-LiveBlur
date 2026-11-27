@@ -1,6 +1,6 @@
 id=enable_live_blur
 name=Samsung Native Live Blur
-version=1.6.5
-versionCode=18
+version=1.6.6
+versionCode=19
 author=Local
-description=Bounded AOD transition refresh boost, fullscreen AOD wallpaper, AOD-to-lockscreen clock transition, per-app configurable Samsung native JNI blur support and original SM-S942B color-curve renderer for this SM-A576B build. Refreshes stale renderer mounts after updates; pins GLES with first-failure recovery. Zygisk Next and reboot required.
+description=AOD clock glass-state correction, bounded UI frame pacing and AOD transition refresh boost, fullscreen AOD wallpaper, AOD-to-lockscreen clock transition, per-app configurable Samsung native JNI blur support and original SM-S942B color-curve renderer for this SM-A576B build. Refreshes stale renderer mounts after updates; pins GLES with first-failure recovery. Zygisk Next and reboot required.

@@ -2,6 +2,7 @@
 #include "zygisk.hpp"
 #include "donor_loader.hpp"
 #include "app_scope.hpp"
+#include "clock_guard.hpp"
 #include "expected_build.hpp"
 #include <sys/system_properties.h>
 #include <pthread.h>
@@ -22,6 +23,7 @@ void forward(JNIEnv *e,jclass c,jlong t,jlong s,jobjectArray regions){
   }
   pthread_mutex_unlock(&initMutex);
  }
+ clock_guard::ensure(e);
  static unsigned calls=0;
  if(__atomic_fetch_add(&calls,1,__ATOMIC_RELAXED)<3)
   __android_log_print(ANDROID_LOG_INFO,"NativeBlurDonor","Forwarding %d regions to Samsung Ex routine",regions?e->GetArrayLength(regions):0);
@@ -48,6 +50,7 @@ class NativeBlurModule:public zygisk::ModuleBase {
   int fd=api->getModuleDir();
   if(fd<0){__android_log_print(ANDROID_LOG_ERROR,"NativeBlurDonor","Module directory unavailable");api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);return;}
   if(scope::excluded(fd,process)){close(fd);api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);return;}
+  if(!strcmp(process,"com.android.systemui"))clock_guard::prepare(fd);
   char link[64],root[4096],path[4200];snprintf(link,sizeof(link),"/proc/self/fd/%d",fd);
   ssize_t n=readlink(link,root,sizeof(root)-1);close(fd);
   if(n<=0){__android_log_print(ANDROID_LOG_ERROR,"NativeBlurDonor","Module path unavailable");api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);return;}
