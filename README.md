@@ -25,7 +25,7 @@ The installer checks the exact firmware fingerprint; other builds are unsupporte
 
 ## Download and install
 
-[Download v1.6.1](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.1/Samsung-Native-Live-Blur-v1.6.1.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.1/SHA256SUMS.txt)
+[Download v1.6.2](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.2/Samsung-Native-Live-Blur-v1.6.2.zip) · [SHA-256](https://github.com/hamzatuss/A57-LiveBlur/releases/download/v1.6.2/SHA256SUMS.txt)
 
 1. Install the ZIP through KernelSU.
 2. Fully reboot your phone.
@@ -34,7 +34,7 @@ The installer checks the exact firmware fingerprint; other builds are unsupporte
 
 Enables Samsung's native blur API and uses the original flagship SurfaceFlinger renderer for color curves. Supports eligible Samsung and third-party app processes, including shared framework dialogs. Apps must request the effect themselves; configured Zygisk exclusions still apply.
 
-This release contains native blur and color curves with per-app exclusions. System partitions are not flashed. Older builds, including the discontinued AI/animation builds, are marked **Archived** in [Releases](https://github.com/hamzatuss/A57-LiveBlur/releases).
+This release contains native blur and color curves with per-app exclusions, plus Samsung’s built-in AOD-to-lock-screen clock transition. Enable Always On Display in Settings to use it; the visible effect depends on the selected clock and AOD configuration. System partitions are not flashed. Older builds, including the discontinued AI/animation builds, are marked **Archived** in [Releases](https://github.com/hamzatuss/A57-LiveBlur/releases).
 
 ## Per-app exclusions
 
