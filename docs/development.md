@@ -48,3 +48,7 @@ See [architecture.md](architecture.md) for pinned inputs, implementation history
 ## AOD resource overlay
 
 The packaged APK is built from [overlay/aod-light-reveal](../overlay/aod-light-reveal) with `sh tools/build-aod-overlay.sh`. Requires aapt2, keytool and apksigner plus the supported phone’s framework-res.apk. The builder creates a local signing key in ignored build output and produces the static code-free overlay in module/system/product/overlay. Packaging requires this APK. No installation or overlay activation occurs during the build.
+
+## Transition refresh listener
+
+Set ANDROID_JAR to an API 35+ SDK android.jar and D8_JAR to build-tools lib/d8.jar, then run `sh tools/build-aod-refresh.sh`. Source is in module/source/aod-refresh; output is module/refresh/aod-refresh.dex. The helper uses Samsung display APIs only on the pinned firmware. `--self-test` briefly requests a vote and verifies timed release; `--probe` is a diagnostic panel-policy test, not a UI FPS benchmark. Run diagnostics only on the supported phone. The helper writes no preferences.

@@ -12,3 +12,5 @@ renderer-watch.pid
 
 # Required resource-only AOD overlay, built from overlay/aod-light-reveal/.
 !/module/system/product/overlay/A57AodLightReveal.apk
+
+refresh-disabled
