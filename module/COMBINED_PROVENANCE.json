@@ -8,6 +8,6 @@
   "target": "samsung/a57xnaeea/a57x:17/CP2A.260605.016/A576BXXS6BZJ2_OXM6BZJ2:user/release-keys",
   "rendererSha256": "103c5493947529c46bd46ad7e164c581ed39095ab24aee973e3d87b8932842dc",
   "zygiskSha256": "6b2e7fcda02268c904fa87eebbeccec7435e74c1b60d92d26b1b915026dbc8ec",
-  "modifications": "v1.6.2: add clocktransition to FRAMEWORK_CONFIG_AOD_ITEM in both floating-feature overlays. Keep native blur, per-app exclusions and renderer recovery unchanged; no AI or launcher animation additions.",
-  "validation": "Static DEX inspection confirms installed SystemUI LsRune and AOD configuration code read FRAMEWORK_CONFIG_AOD_ITEM and clocktransition. Donor XML contains this token. No brightness/fullscreen/refresh-rate overrides. Native/recovery baseline and package integrity verified; visible transition requires on-device confirmation after installation."
+  "modifications": "v1.6.3: set the donor AOD_FULLSCREEN feature to 1 in both existing overlays and disable conflicting fullaodenable modules during installation. Retain clocktransition and existing blur/recovery. Independent XML configuration; no third-party installer code bundled.",
+  "validation": "Feature change restricted to AOD_FULLSCREEN; native blur and renderer recovery unchanged. Isolated installer tests cover standalone AOD migration. Fullscreen wallpaper UI/battery behavior requires confirmation after installation."
 }
